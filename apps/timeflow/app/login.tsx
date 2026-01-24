@@ -87,11 +87,14 @@ export default function LoginScreen() {
         scheme: "timeflow",
         path: "sso-callback",
       });
-      const { createdSessionId, setActive: setActiveFromSSO, authSessionResult } =
-        await startSSOFlow({
-          strategy: "oauth_google",
-          redirectUrl,
-        });
+      const {
+        createdSessionId,
+        setActive: setActiveFromSSO,
+        authSessionResult,
+      } = await startSSOFlow({
+        strategy: "oauth_google",
+        redirectUrl,
+      });
 
       // User closed the browser before completing Google sign-in (e.g. Back, swipe)
       if (authSessionResult?.type === "dismiss") {
@@ -170,11 +173,7 @@ export default function LoginScreen() {
             accessibilityLabel="Sign in"
             className="min-h-[52px] py-4"
           >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              "Sign In"
-            )}
+            {isLoading ? <ActivityIndicator color="#fff" /> : "Sign In"}
           </Button>
         </View>
 
@@ -201,4 +200,3 @@ export default function LoginScreen() {
     </KeyboardAvoidingView>
   );
 }
-

@@ -49,7 +49,6 @@ export const textInputStyles = {
   `,
 };
 
-
 export type TextInputVariant = keyof typeof textInputStyles;
 
 export interface TextInputComponentProps extends TextInputProps {
@@ -75,12 +74,15 @@ export function TextInput({
   const hasValue = Boolean(value && value.length > 0);
   const isDisabled = !editable;
 
-  const combinedClasses = twMerge(baseClasses, variantClasses,
+  const combinedClasses = twMerge(
+    baseClasses,
+    variantClasses,
     isFocused && textInputStyles.focused,
     hasValue && textInputStyles.filled,
     error && textInputStyles.error,
     isDisabled && textInputStyles.disabled,
-    className);
+    className
+  );
 
   const handleFocus = (e: any) => {
     setIsFocused(true);

@@ -7,9 +7,12 @@
     "dev:timeflow": "pnpm --filter timeflow start",
     "gen:api": "pnpm --filter @acme/api-client gen",
     "build": "pnpm --filter @acme/api build && pnpm --filter @acme/api-client build && pnpm --filter @acme/web build",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\""
   },
   "devDependencies": {
+    "prettier": "^3.8.1",
     "typescript": "^5.7.3"
   }
 }

@@ -6,5 +6,5 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export * from './errorResponse';
-export * from './meResponse';
+export * from "./errorResponse";
+export * from "./meResponse";

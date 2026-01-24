@@ -1,4 +1,10 @@
-import { View, Text, StyleSheet, ActivityIndicator, Button } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Button,
+} from "react-native";
 import { useAuth, SignedIn, SignedOut } from "@clerk/clerk-expo";
 import { useGetApiV1Me } from "@acme/api-client";
 import { Redirect } from "expo-router";
@@ -18,7 +24,9 @@ function UserInfo() {
   if (error) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>Error: {error.error ?? "Unknown error"}</Text>
+        <Text style={styles.errorText}>
+          Error: {error.error ?? "Unknown error"}
+        </Text>
         <View style={styles.buttonContainer}>
           <Button title="Retry" onPress={() => refetch()} />
         </View>
@@ -46,7 +54,9 @@ function UserInfo() {
   if (response?.status === 401) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>Unauthorized: {response.data.error}</Text>
+        <Text style={styles.errorText}>
+          Unauthorized: {response.data.error}
+        </Text>
         <View style={styles.buttonContainer}>
           <Button title="Retry" onPress={() => refetch()} />
         </View>
