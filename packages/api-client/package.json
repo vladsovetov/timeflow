@@ -1,0 +1,27 @@
+{
+  "name": "@acme/api-client",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "gen": "orval",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.64.1"
+  },
+  "devDependencies": {
+    "orval": "^7.4.1",
+    "typescript": "^5.7.3"
+  },
+  "peerDependencies": {
+    "react": "19.1.0"
+  }
+}
