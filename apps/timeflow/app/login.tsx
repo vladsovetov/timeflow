@@ -83,21 +83,25 @@ export default function LoginScreen() {
     setIsGoogleLoading(true);
 
     try {
-      const { createdSessionId, setActive: setActiveFromSSO } =
+      const redirectUrl = AuthSession.makeRedirectUri({
+        scheme: "timeflow",
+        path: "sso-callback",
+      });
+      const { createdSessionId, setActive: setActiveFromSSO, authSessionResult } =
         await startSSOFlow({
           strategy: "oauth_google",
-          redirectUrl: AuthSession.makeRedirectUri({
-            scheme: "timeflow",
-          }),
+          redirectUrl,
         });
 
-      // If sign in was successful, set the active session
+      // User closed the browser before completing Google sign-in (e.g. Back, swipe)
+      if (authSessionResult?.type === "dismiss") {
+        return;
+      }
+
       if (createdSessionId && setActiveFromSSO) {
         await setActiveFromSSO({ session: createdSessionId });
         router.replace("/");
       } else {
-        // If there is no `createdSessionId`,
-        // there are missing requirements, such as MFA
         setError("Sign-in incomplete. Additional steps may be required.");
       }
     } catch (err: unknown) {
