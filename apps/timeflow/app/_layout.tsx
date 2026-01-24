@@ -48,7 +48,6 @@ if (!clerkPublishableKey) {
 function ApiClientConfigurator({ children }: { children: React.ReactNode }) {
   const { getToken } = useAuth();
 
-  useEffect(() => {
     // ENV: EXPO_PUBLIC_API_URL - The base URL of your API (e.g., https://your-app.vercel.app)
     const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
 
@@ -62,7 +61,6 @@ function ApiClientConfigurator({ children }: { children: React.ReactNode }) {
         }
       },
     });
-  }, [getToken]);
 
   return <>{children}</>;
 }
