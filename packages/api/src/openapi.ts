@@ -44,6 +44,27 @@ registry.registerPath({
   },
 });
 
+registry.registerPath({
+  method: "get",
+  path: "/api/v1/example-db",
+  summary: "Get example database data",
+  description: "Returns example database data",
+  tags: ["Database"],
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: "Successful response with database data",
+      content: {
+        "application/json": {
+          schema: z.object({
+            data: z.string(),
+          }),
+        },
+      },
+    },
+  },
+});
+
 // Register security scheme
 registry.registerComponent("securitySchemes", "bearerAuth", {
   type: "http",

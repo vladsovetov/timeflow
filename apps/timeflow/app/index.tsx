@@ -6,12 +6,16 @@ import {
   Button,
 } from "react-native";
 import { useAuth, SignedIn, SignedOut } from "@clerk/clerk-expo";
-import { useGetApiV1Me } from "@acme/api-client";
+import { useGetApiV1Me, useGetApiV1ExampleDb } from "@acme/api-client";
 import { Redirect } from "expo-router";
 
 function UserInfo() {
   const { data: response, isLoading, error, refetch } = useGetApiV1Me();
-
+  const { data: exampleDbData, isLoading: isExampleDbLoading, error: exampleDbError, refetch: refetchExampleDb } = useGetApiV1ExampleDb();
+  console.log("exampleDbData", exampleDbData);
+  console.log("isExampleDbLoading", isExampleDbLoading);
+  console.log("exampleDbError", exampleDbError);
+  console.log("refetchExampleDb", refetchExampleDb);
   if (isLoading) {
     return (
       <View style={styles.centered}>

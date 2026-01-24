@@ -22,6 +22,7 @@ import type {
 
 import type {
   ErrorResponse,
+  GetApiV1ExampleDb200,
   MeResponse
 } from './models';
 
@@ -139,6 +140,120 @@ export function useGetApiV1Me<TData = Awaited<ReturnType<typeof getApiV1Me>>, TE
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetApiV1MeQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+
+/**
+ * Returns example database data
+ * @summary Get example database data
+ */
+export type getApiV1ExampleDbResponse200 = {
+  data: GetApiV1ExampleDb200
+  status: 200
+}
+    
+export type getApiV1ExampleDbResponseSuccess = (getApiV1ExampleDbResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiV1ExampleDbResponse = (getApiV1ExampleDbResponseSuccess)
+
+export const getGetApiV1ExampleDbUrl = () => {
+
+
+  
+
+  return `/api/v1/example-db`
+}
+
+export const getApiV1ExampleDb = async ( options?: RequestInit): Promise<getApiV1ExampleDbResponse> => {
+  
+  return customFetch<getApiV1ExampleDbResponse>(getGetApiV1ExampleDbUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getGetApiV1ExampleDbQueryKey = () => {
+    return [
+    `/api/v1/example-db`
+    ] as const;
+    }
+
+    
+export const getGetApiV1ExampleDbQueryOptions = <TData = Awaited<ReturnType<typeof getApiV1ExampleDb>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1ExampleDb>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetApiV1ExampleDbQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiV1ExampleDb>>> = ({ signal }) => getApiV1ExampleDb({ signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiV1ExampleDb>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetApiV1ExampleDbQueryResult = NonNullable<Awaited<ReturnType<typeof getApiV1ExampleDb>>>
+export type GetApiV1ExampleDbQueryError = unknown
+
+
+export function useGetApiV1ExampleDb<TData = Awaited<ReturnType<typeof getApiV1ExampleDb>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1ExampleDb>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getApiV1ExampleDb>>,
+          TError,
+          Awaited<ReturnType<typeof getApiV1ExampleDb>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetApiV1ExampleDb<TData = Awaited<ReturnType<typeof getApiV1ExampleDb>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1ExampleDb>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getApiV1ExampleDb>>,
+          TError,
+          Awaited<ReturnType<typeof getApiV1ExampleDb>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetApiV1ExampleDb<TData = Awaited<ReturnType<typeof getApiV1ExampleDb>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1ExampleDb>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get example database data
+ */
+
+export function useGetApiV1ExampleDb<TData = Awaited<ReturnType<typeof getApiV1ExampleDb>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1ExampleDb>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetApiV1ExampleDbQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

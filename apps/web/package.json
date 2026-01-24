@@ -12,6 +12,7 @@
   "dependencies": {
     "@acme/api": "workspace:*",
     "@clerk/nextjs": "^6.10.3",
+    "@neondatabase/serverless": "^1.0.2",
     "next": "^16.1.4",
     "react": "19.1.0",
     "react-dom": "19.1.0"
