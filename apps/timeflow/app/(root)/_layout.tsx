@@ -36,6 +36,18 @@ export default function RootLayout() {
               headerTintColor: "#FFFFFF",
             }}
           />
+          <Stack.Screen
+            name="timers/color-picker"
+            options={{
+              presentation: "modal",
+              headerShown: true,
+              title: "Select Color",
+              headerStyle: {
+                backgroundColor: "#121225",
+              },
+              headerTintColor: "#FFFFFF",
+            }}
+          />
         </Stack>
       </SignedIn>
       <SignedOut>

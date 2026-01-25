@@ -2,6 +2,7 @@ import { View, Text, ScrollView, TouchableOpacity, Switch } from "react-native";
 import { useForm, Controller, UseFormReturn } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { useRouter } from "expo-router";
 import { TextInput } from "@/src/components/TextInput/TextInput";
 import type { CreateTimerRequest, UpdateTimerRequest } from "@acme/api-client";
 
@@ -47,6 +48,7 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
     control,
     formState: { errors },
   } = form;
+  const router = useRouter();
 
   return (
     <ScrollView className="flex-1 bg-tf-bg-primary">
@@ -119,7 +121,15 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
           render={({ field: { onChange, onBlur, value } }) => (
             <View className="mb-4">
               <Text className="text-tf-text-primary text-sm mb-2">Color</Text>
-              <View className="flex-row items-center">
+              <TouchableOpacity
+                onPress={() => {
+                  router.push({
+                    pathname: "/(root)/timers/color-picker",
+                    params: { color: value || "#3b82f6" },
+                  });
+                }}
+                className="flex-row items-center"
+              >
                 {value && (
                   <View
                     className="w-8 h-8 rounded-full mr-3 border border-tf-input-border"
@@ -134,9 +144,10 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
                     onChangeText={onChange}
                     onBlur={onBlur}
                     autoCapitalize="none"
+                    editable={false}
                   />
                 </View>
-              </View>
+              </TouchableOpacity>
             </View>
           )}
         />

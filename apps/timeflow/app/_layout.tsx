@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/clerk-expo";
 import { configureApiClient } from "@acme/api-client";
 import * as SecureStore from "expo-secure-store";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -67,17 +68,19 @@ function ApiClientConfigurator({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ClerkProvider
-        publishableKey={clerkPublishableKey ?? ""}
-        tokenCache={tokenCache}
-      >
-        <ClerkLoaded>
-          <ApiClientConfigurator>
-            <Slot />
-          </ApiClientConfigurator>
-        </ClerkLoaded>
-      </ClerkProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <ClerkProvider
+          publishableKey={clerkPublishableKey ?? ""}
+          tokenCache={tokenCache}
+        >
+          <ClerkLoaded>
+            <ApiClientConfigurator>
+              <Slot />
+            </ApiClientConfigurator>
+          </ClerkLoaded>
+        </ClerkProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

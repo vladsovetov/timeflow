@@ -1,14 +1,33 @@
 import { View } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { usePostApiV1Timers } from "@acme/api-client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
+import * as SecureStore from "expo-secure-store";
 import { TimerForm, useTimerForm } from "@/src/components/TimerForm/TimerForm";
 import { Button } from "@/src/components/Button/Button";
+
+const COLOR_PICKER_STORAGE_KEY = "selected_color_temp";
 
 export default function CreateTimerScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const form = useTimerForm(undefined, false);
+
+  // Handle color selection from color picker
+  useFocusEffect(
+    useCallback(() => {
+      const checkSelectedColor = async () => {
+        const selectedColor = await SecureStore.getItemAsync(COLOR_PICKER_STORAGE_KEY);
+        if (selectedColor) {
+          form.setValue("color", selectedColor);
+          // Clear the stored color
+          await SecureStore.deleteItemAsync(COLOR_PICKER_STORAGE_KEY);
+        }
+      };
+      checkSelectedColor();
+    }, [form])
+  );
 
   const createMutation = usePostApiV1Timers({
     mutation: {
