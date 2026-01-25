@@ -1,10 +1,10 @@
-import { Pressable, Text, type PressableProps } from "react-native";
+import { Pressable, Text, Platform, type PressableProps } from "react-native";
 import { twMerge } from "tailwind-merge";
 
 const buttonStyles = {
-  primary: "bg-tf-gradient text-white",
+  primary: "bg-tf-purple text-white",
   secondary:
-    "bg-tf-bg-secondary border border-tf-bg-tertiary text-tf-text-primary",
+    "bg-tf-bg-secondary border border-tf-purple text-tf-text-primary",
   ghost: "bg-transparent text-tf-text-secondary active:bg-tf-bg-tertiary",
   outline: "border border-tf-purple text-tf-purple",
   danger: "bg-tf-error text-white",
@@ -18,6 +18,31 @@ export interface ButtonProps extends Omit<PressableProps, "children"> {
   children: React.ReactNode;
   className?: string;
 }
+
+const getShadowStyle = (variant: ButtonVariant) => {
+  if (variant === "ghost") {
+    return {};
+  }
+
+  const shadowColor = "#000000";
+  const shadowOpacity = 0.3;
+  const shadowRadius = 4;
+  const shadowOffset = { width: 0, height: 2 };
+  const elevation = 3;
+
+  if (Platform.OS === "ios") {
+    return {
+      shadowColor,
+      shadowOffset,
+      shadowOpacity,
+      shadowRadius,
+    };
+  } else {
+    return {
+      elevation,
+    };
+  }
+};
 
 export function Button({
   variant = "primary",
@@ -36,8 +61,15 @@ export function Button({
     className
   );
 
+  const shadowStyle = getShadowStyle(variant);
+
   return (
-    <Pressable className={combinedClasses} disabled={disabled} {...props}>
+    <Pressable
+      className={combinedClasses}
+      disabled={disabled}
+      style={shadowStyle}
+      {...props}
+    >
       {typeof children === "string" ? (
         <Text className="font-semibold">{children}</Text>
       ) : (

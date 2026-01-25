@@ -1,0 +1,41 @@
+import { View } from "react-native";
+import { useRouter } from "expo-router";
+import { usePostApiV1Timers } from "@acme/api-client";
+import { useQueryClient } from "@tanstack/react-query";
+import { TimerForm, useTimerForm } from "@/src/components/TimerForm/TimerForm";
+import { Button } from "@/src/components/Button/Button";
+
+export default function CreateTimerScreen() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const form = useTimerForm(undefined, false);
+
+  const createMutation = usePostApiV1Timers({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/v1/timers"] });
+        router.back();
+      },
+    },
+  });
+
+  const onSubmit = form.handleSubmit((data) => {
+    createMutation.mutate({ data });
+  });
+
+  return (
+    <View className="flex-1 bg-tf-bg-primary">
+      <TimerForm form={form} isUpdate={false} />
+      <View className="px-6 pb-6">
+        <Button
+          variant="primary"
+          onPress={onSubmit}
+          disabled={createMutation.isPending}
+          className="w-full"
+        >
+          {createMutation.isPending ? "Creating..." : "Create Timer"}
+        </Button>
+      </View>
+    </View>
+  );
+}

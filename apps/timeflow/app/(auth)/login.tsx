@@ -6,6 +6,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSignIn, useSSO } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -57,7 +58,7 @@ export default function LoginScreen() {
       // and redirect the user
       if (signInAttempt.status === "complete") {
         await setActive({ session: signInAttempt.createdSessionId });
-        router.replace("/");
+        router.replace("/(root)/(tabs)/timers");
       } else {
         // If the status isn't complete, check why. User might need to
         // complete further steps (e.g., MFA).
@@ -103,7 +104,7 @@ export default function LoginScreen() {
 
       if (createdSessionId && setActiveFromSSO) {
         await setActiveFromSSO({ session: createdSessionId });
-        router.replace("/");
+        router.replace("/(root)/(tabs)/timers");
       } else {
         setError("Sign-in incomplete. Additional steps may be required.");
       }
@@ -188,12 +189,21 @@ export default function LoginScreen() {
           onPress={onGoogleSignInPress}
           disabled={!isLoaded || isLoading || isGoogleLoading}
           accessibilityLabel="Sign in with Google"
-          className="min-h-[52px] py-4"
+          className="min-h-[52px] py-4 bg-white border border-gray-300"
         >
           {isGoogleLoading ? (
-            <ActivityIndicator color="#333" />
+            <ActivityIndicator color="#3C4043" />
           ) : (
-            "Sign in with Google"
+            <View className="flex-row items-center justify-center gap-3">
+              <MaterialCommunityIcons
+                name="google"
+                size={20}
+                color="#4285F4"
+              />
+              <Text className="text-[#3C4043] font-medium text-base">
+                Sign in with Google
+              </Text>
+            </View>
           )}
         </Button>
       </View>
