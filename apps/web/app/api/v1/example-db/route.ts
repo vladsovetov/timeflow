@@ -1,12 +1,12 @@
-import { sql } from "@/lib/db";
+import { sql } from "@/db";
 import { NextResponse } from "next/server";
 
 // Example endpoint showing database usage
 export async function GET() {
   try {
     // Example query - replace with your actual queries
-    const result = await sql`SELECT NOW() as current_time`;
-    return NextResponse.json({ data: result });
+    const result = await sql`SELECT NOW() as current_time`.execute();
+    return NextResponse.json({ data: result.rows });
   } catch (error) {
     console.error("Database error:", error);
     return NextResponse.json(
