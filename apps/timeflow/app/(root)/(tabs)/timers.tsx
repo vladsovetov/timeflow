@@ -1,11 +1,14 @@
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useGetApiV1Timers } from "@acme/api-client";
 import { Button } from "@/src/components/Button/Button";
+import { Timer } from "@/src/components/Timer/Timer";
+import { useState } from "react";
 
 export default function TimersScreen() {
   const router = useRouter();
   const { data, isLoading, error, refetch } = useGetApiV1Timers();
+  const [runningTimerId, setRunningTimerId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -58,27 +61,15 @@ export default function TimersScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ padding: 24, paddingTop: 8 }}
             renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => router.push(`/(root)/timers/${item.id}`)}
-                className="bg-tf-bg-secondary border border-tf-bg-tertiary rounded-xl p-4 mb-3"
-              >
-                <View className="flex-row items-center">
-                  {item.color && (
-                    <View
-                      className="w-4 h-4 rounded-full mr-3"
-                      style={{ backgroundColor: item.color }}
-                    />
-                  )}
-                  <View className="flex-1">
-                    <Text className="text-tf-text-primary text-lg font-semibold">
-                      {item.name}
-                    </Text>
-                    <Text className="text-tf-text-secondary text-sm mt-1">
-                      {item.timer_type}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
+              <View className="mb-3">
+                <Timer
+                  timerType={item.timer_type}
+                  color={item.color}
+                  isRunning={runningTimerId === item.id}
+                  onStart={() => setRunningTimerId(item.id)}
+                  onPause={() => setRunningTimerId(null)}
+                />
+              </View>
             )}
           />
           <View className="px-6 pb-6">

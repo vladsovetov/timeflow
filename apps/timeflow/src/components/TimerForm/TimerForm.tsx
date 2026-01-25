@@ -3,21 +3,22 @@ import { useForm, Controller, UseFormReturn } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { TextInput } from "@/src/components/TextInput/TextInput";
 import type { CreateTimerRequest, UpdateTimerRequest } from "@acme/api-client";
 
 const TIMER_TYPES = [
-  "work",
-  "study",
-  "exercise",
-  "break",
-  "personal",
-  "focus",
-  "meeting",
-  "hobby",
-  "health",
-  "sleep",
-  "other",
+  { key: "work", name: "Work", description: "Work-related activities", sort_order: 0, icon: "briefcase" as const },
+  { key: "study", name: "Study", description: "Learning and studying", sort_order: 1, icon: "book" as const },
+  { key: "exercise", name: "Exercise", description: "Physical exercise and fitness", sort_order: 2, icon: "barbell" as const },
+  { key: "break", name: "Break", description: "Rest and relaxation breaks", sort_order: 3, icon: "cafe" as const },
+  { key: "personal", name: "Personal", description: "Personal activities", sort_order: 4, icon: "person" as const },
+  { key: "focus", name: "Focus", description: "Focused work sessions", sort_order: 5, icon: "flash" as const },
+  { key: "meeting", name: "Meeting", description: "Meetings and discussions", sort_order: 6, icon: "people" as const },
+  { key: "hobby", name: "Hobby", description: "Hobbies and interests", sort_order: 7, icon: "color-palette" as const },
+  { key: "health", name: "Health", description: "Health-related activities", sort_order: 8, icon: "medical" as const },
+  { key: "sleep", name: "Sleep", description: "Sleep and rest", sort_order: 9, icon: "moon" as const },
+  { key: "other", name: "Other", description: "Other activities", sort_order: 10, icon: "ellipsis-horizontal" as const },
 ];
 
 const createSchema = yup.object({
@@ -66,22 +67,28 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
                   <View className="flex-row p-2">
                     {TIMER_TYPES.map((type) => (
                       <TouchableOpacity
-                        key={type}
-                        onPress={() => onChange(type)}
-                        className={`px-4 py-2 rounded-lg mr-2 ${
-                          value === type
+                        key={type.key}
+                        onPress={() => onChange(type.key)}
+                        className={`px-4 py-2 rounded-lg mr-2 flex-row items-center ${
+                          value === type.key
                             ? "bg-tf-purple"
                             : "bg-tf-bg-secondary"
                         }`}
                       >
+                        <Ionicons
+                          name={type.icon}
+                          size={18}
+                          color={value === type.key ? "#ffffff" : "#8A8DB3"}
+                          style={{ marginRight: 6 }}
+                        />
                         <Text
                           className={`${
-                            value === type
+                            value === type.key
                               ? "text-white"
                               : "text-tf-text-secondary"
-                          } capitalize`}
+                          }`}
                         >
-                          {type}
+                          {type.name}
                         </Text>
                       </TouchableOpacity>
                     ))}
