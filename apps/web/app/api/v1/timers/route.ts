@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { db, sql } from "@/db";
 import { getOrCreateUser } from "@/lib/user";
 import type { ErrorResponse } from "@acme/api";
+import { DateTime } from "luxon";
 
 async function getValidTimerTypeKeys(): Promise<Set<string>> {
   const rows = await db
@@ -10,6 +11,58 @@ async function getValidTimerTypeKeys(): Promise<Set<string>> {
     .select("key")
     .execute();
   return new Set(rows.map((r: { key: string }) => r.key));
+}
+
+async function calculateTotalTimerSessionTime(
+  timerId: string,
+  userId: string,
+  timezone: string | null
+): Promise<number> {
+  const tz = timezone || "UTC";
+  const now = DateTime.now().setZone(tz);
+  const startOfDay = now.startOf("day");
+  const endOfDay = now.endOf("day");
+
+  const sessions = await db
+    .selectFrom("timer_session")
+    .select(["started_at", "ended_at"])
+    .where("timer_id", "=", timerId)
+    .where("user_id", "=", userId)
+    .where("is_deleted", "=", false)
+    .where("started_at", ">=", startOfDay.toJSDate())
+    .where("started_at", "<=", endOfDay.toJSDate())
+    .execute();
+
+  let totalSeconds = 0;
+
+  for (const session of sessions) {
+    const sessionStart = DateTime.fromJSDate(session.started_at, { zone: tz });
+    const sessionEnd = session.ended_at
+      ? DateTime.fromJSDate(session.ended_at, { zone: tz })
+      : now;
+
+    const duration = sessionEnd.diff(sessionStart, "seconds").seconds;
+    totalSeconds += Math.max(0, duration);
+  }
+
+  return Math.round(totalSeconds);
+}
+
+async function getInProgressTimerSessionId(
+  timerId: string,
+  userId: string
+): Promise<string | null> {
+  const session = await db
+    .selectFrom("timer_session")
+    .select("id")
+    .where("timer_id", "=", timerId)
+    .where("user_id", "=", userId)
+    .where("is_deleted", "=", false)
+    .where("ended_at", "is", null)
+    .orderBy("started_at", "desc")
+    .executeTakeFirst();
+
+  return session?.id || null;
 }
 
 export async function GET() {
@@ -29,6 +82,13 @@ export async function GET() {
     );
   }
 
+  const userRecord = await db
+    .selectFrom("user")
+    .select(["timezone"])
+    .where("id", "=", user.id)
+    .where("is_deleted", "=", false)
+    .executeTakeFirst();
+
   const timers = await db
     .selectFrom("timer")
     .selectAll()
@@ -38,7 +98,26 @@ export async function GET() {
     .orderBy("created_at", "asc")
     .execute();
 
-  return NextResponse.json({ data: timers });
+  const timersWithTotalTime = await Promise.all(
+    timers.map(async (timer) => {
+      const totalTime = await calculateTotalTimerSessionTime(
+        timer.id,
+        user.id,
+        userRecord?.timezone || null
+      );
+      const inProgressSessionId = await getInProgressTimerSessionId(
+        timer.id,
+        user.id
+      );
+      return {
+        ...timer,
+        total_timer_session_time: totalTime,
+        timer_session_in_progress_id: inProgressSessionId,
+      };
+    })
+  );
+
+  return NextResponse.json({ data: timersWithTotalTime });
 }
 
 export async function POST(request: Request) {
@@ -117,7 +196,20 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
-    return NextResponse.json({ data: row }, { status: 201 });
+    const inProgressSessionId = await getInProgressTimerSessionId(
+      row.id,
+      user.id
+    );
+    return NextResponse.json(
+      {
+        data: {
+          ...row,
+          total_timer_session_time: 0,
+          timer_session_in_progress_id: inProgressSessionId,
+        },
+      },
+      { status: 201 }
+    );
   } catch (e: unknown) {
     const err = e as { code?: string };
     if (err.code === "23505") {

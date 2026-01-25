@@ -5,7 +5,7 @@ import {
 import type { OpenAPIObject } from "openapi3-ts/oas30";
 import { z } from "zod";
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
-import { MeResponseSchema, ErrorResponseSchema } from "./schemas/me.js";
+import { MeResponseSchema, UpdateProfileRequestSchema, ErrorResponseSchema } from "./schemas/me.js";
 import {
   TimerSchema,
   TimerListResponseSchema,
@@ -13,6 +13,13 @@ import {
   CreateTimerRequestSchema,
   UpdateTimerRequestSchema,
 } from "./schemas/timer.js";
+import {
+  TimerSessionSchema,
+  TimerSessionResponseSchema,
+  TimerSessionListResponseSchema,
+  CreateTimerSessionRequestSchema,
+  UpdateTimerSessionRequestSchema,
+} from "./schemas/timer-session.js";
 
 extendZodWithOpenApi(z);
 
@@ -21,24 +28,30 @@ export const registry = new OpenAPIRegistry();
 
 // Register schemas
 registry.register("MeResponse", MeResponseSchema);
+registry.register("UpdateProfileRequest", UpdateProfileRequestSchema);
 registry.register("ErrorResponse", ErrorResponseSchema);
 registry.register("Timer", TimerSchema);
 registry.register("TimerListResponse", TimerListResponseSchema);
 registry.register("TimerResponse", TimerResponseSchema);
 registry.register("CreateTimerRequest", CreateTimerRequestSchema);
 registry.register("UpdateTimerRequest", UpdateTimerRequestSchema);
+registry.register("TimerSession", TimerSessionSchema);
+registry.register("TimerSessionResponse", TimerSessionResponseSchema);
+registry.register("TimerSessionListResponse", TimerSessionListResponseSchema);
+registry.register("CreateTimerSessionRequest", CreateTimerSessionRequestSchema);
+registry.register("UpdateTimerSessionRequest", UpdateTimerSessionRequestSchema);
 
 // Register the /api/v1/me endpoint
 registry.registerPath({
   method: "get",
   path: "/api/v1/me",
   summary: "Get current user",
-  description: "Returns the authenticated user's ID",
+  description: "Returns the authenticated user's profile information",
   tags: ["User"],
   security: [{ bearerAuth: [] }],
   responses: {
     200: {
-      description: "Successful response with user ID",
+      description: "Successful response with user profile",
       content: {
         "application/json": {
           schema: MeResponseSchema,
@@ -47,6 +60,66 @@ registry.registerPath({
     },
     401: {
       description: "Unauthorized - no valid session",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "User not found",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/v1/me",
+  summary: "Update current user profile",
+  description: "Update the authenticated user's profile information",
+  tags: ["User"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: UpdateProfileRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Profile updated successfully",
+      content: {
+        "application/json": {
+          schema: MeResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Bad request",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Unauthorized - no valid session",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "User not found",
       content: {
         "application/json": {
           schema: ErrorResponseSchema,
@@ -285,6 +358,183 @@ registry.registerPath({
     },
     404: {
       description: "Timer not found",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/v1/timer-sessions",
+  summary: "List timer sessions",
+  description: "List current user's timer sessions (non-deleted)",
+  tags: ["TimerSession"],
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: "List of timer sessions",
+      content: {
+        "application/json": {
+          schema: TimerSessionListResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/v1/timer-sessions",
+  summary: "Create timer session",
+  description: "Create a new timer session for the current user",
+  tags: ["TimerSession"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: CreateTimerSessionRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: "Timer session created",
+      content: {
+        "application/json": {
+          schema: TimerSessionResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Bad request",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Timer not found",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    409: {
+      description: "Conflict - an active session already exists for this timer",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/v1/timer-sessions/{id}",
+  summary: "Update timer session",
+  description: "Update an existing timer session (e.g. set end time when pausing)",
+  tags: ["TimerSession"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({
+      id: z.string().uuid(),
+    }),
+    body: {
+      content: {
+        "application/json": {
+          schema: UpdateTimerSessionRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Timer session updated",
+      content: {
+        "application/json": {
+          schema: TimerSessionResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Bad request",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Timer session not found",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/api/v1/timer-sessions/{id}",
+  summary: "Delete timer session",
+  description: "Soft-delete a timer session",
+  tags: ["TimerSession"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({
+      id: z.string().uuid(),
+    }),
+  },
+  responses: {
+    204: {
+      description: "Timer session deleted",
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Timer session not found",
       content: {
         "application/json": {
           schema: ErrorResponseSchema,

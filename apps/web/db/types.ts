@@ -12,6 +12,9 @@ export interface Database {
   user: {
     id: string
     clerk_user_id: string
+    first_name: string | null
+    last_name: string | null
+    timezone: string | null
     is_deleted: boolean
     created_at: Date
     updated_at: Date

@@ -6,12 +6,12 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface MeResponse {
-  userId: string;
+export interface CreateTimerSessionRequest {
+  timer_id: string;
+  started_at?: string;
   /** @nullable */
-  first_name: string | null;
+  ended_at?: string | null;
+  source?: string;
   /** @nullable */
-  last_name: string | null;
-  /** @nullable */
-  timezone: string | null;
+  note?: string | null;
 }

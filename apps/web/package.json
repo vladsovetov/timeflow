@@ -17,6 +17,7 @@
     "@neondatabase/serverless": "^1.0.2",
     "dotenv": "^17.2.3",
     "kysely": "^0.28.10",
+    "luxon": "^3.7.2",
     "next": "^16.1.4",
     "pg": "^8.17.2",
     "react": "19.1.0",

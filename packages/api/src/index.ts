@@ -1,8 +1,10 @@
 export { generateOpenApiDocument, registry } from "./openapi.js";
 export {
   MeResponseSchema,
+  UpdateProfileRequestSchema,
   ErrorResponseSchema,
   type MeResponse,
+  type UpdateProfileRequest,
   type ErrorResponse,
 } from "./schemas/me.js";
 export {
@@ -17,3 +19,13 @@ export {
   type CreateTimerRequest,
   type UpdateTimerRequest,
 } from "./schemas/timer.js";
+export {
+  TimerSessionSchema,
+  TimerSessionResponseSchema,
+  CreateTimerSessionRequestSchema,
+  UpdateTimerSessionRequestSchema,
+  type TimerSession,
+  type TimerSessionResponse,
+  type CreateTimerSessionRequest,
+  type UpdateTimerSessionRequest,
+} from "./schemas/timer-session.js";

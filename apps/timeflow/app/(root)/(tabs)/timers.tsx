@@ -63,8 +63,7 @@ export default function TimersScreen() {
             renderItem={({ item }) => (
               <View className="mb-3">
                 <Timer
-                  timerType={item.timer_type}
-                  color={item.color}
+                  timer={item}
                   isRunning={runningTimerId === item.id}
                   onStart={() => setRunningTimerId(item.id)}
                   onPause={() => setRunningTimerId(null)}

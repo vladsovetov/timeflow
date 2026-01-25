@@ -20,4 +20,11 @@ export interface Timer {
   updated_at: string;
   /** @nullable */
   updated_by: string | null;
+  /** Total timer session time for current day in seconds */
+  total_timer_session_time: number;
+  /**
+   * ID of the last timer session that has started_at but no ended_at
+   * @nullable
+   */
+  timer_session_in_progress_id: string | null;
 }

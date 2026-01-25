@@ -1,6 +1,13 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useEffect, useState, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  usePostApiV1TimerSessions,
+  usePatchApiV1TimerSessionsId,
+  getGetApiV1TimersQueryKey,
+  type Timer as TimerModel,
+} from "@acme/api-client";
 
 const TIMER_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   work: "briefcase",
@@ -17,12 +24,10 @@ const TIMER_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 interface TimerProps {
-  timerType?: string;
-  color?: string | null;
+  timer: TimerModel;
   onStart?: () => void;
   onPause?: () => void;
   isRunning?: boolean;
-  initialTime?: number; // in seconds
 }
 
 function formatTime(seconds: number): string {
@@ -37,20 +42,28 @@ function formatTime(seconds: number): string {
 }
 
 export function Timer({
-  timerType = "other",
-  color,
+  timer,
   onStart,
   onPause,
   isRunning = false,
-  initialTime = 0,
 }: TimerProps) {
+  const initialTime = timer.total_timer_session_time;
   const [time, setTime] = useState(initialTime);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const queryClient = useQueryClient();
+
+  const createMutation = usePostApiV1TimerSessions();
+  const patchMutation = usePatchApiV1TimerSessionsId();
+
+  const isCreating = createMutation.isPending;
+  const isPatching = patchMutation.isPending;
+  const isBusy = isCreating || isPatching;
 
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = setInterval(() => {
-        setTime((prev) => prev + 1);
+        setTime((prev: number) => prev + 1);
       }, 1000);
     } else {
       if (intervalRef.current) {
@@ -67,11 +80,47 @@ export function Timer({
   }, [isRunning]);
 
   useEffect(() => {
-    setTime(initialTime);
-  }, [initialTime]);
+    if (!isRunning) {
+      setTime(initialTime);
+    }
+  }, [initialTime, isRunning]);
 
-  const iconName = TIMER_TYPE_ICONS[timerType] || TIMER_TYPE_ICONS.other;
-  const borderColor = color || "#6B7280";
+  async function handleStart() {
+    if (isBusy) return;
+    try {
+      const res = await createMutation.mutateAsync({
+        data: {
+          timer_id: timer.id,
+          started_at: new Date().toISOString(),
+        },
+      });
+      if (res.status === 201 && res.data?.data?.id) {
+        setSessionId(res.data.data.id);
+        onStart?.();
+      }
+    } catch {
+      // Create failed – don't start
+    }
+  }
+
+  async function handlePause() {
+    if (isBusy || !sessionId) return;
+    try {
+      await patchMutation.mutateAsync({
+        id: sessionId,
+        data: { ended_at: new Date().toISOString() },
+      });
+      await queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+      setSessionId(null);
+      onPause?.();
+    } catch {
+      setSessionId(null);
+      onPause?.();
+    }
+  }
+
+  const iconName = TIMER_TYPE_ICONS[timer.timer_type] || TIMER_TYPE_ICONS.other;
+  const borderColor = timer.color ?? "#6B7280";
 
   return (
     <View
@@ -91,17 +140,27 @@ export function Timer({
       <View className="ml-4">
         {isRunning ? (
           <TouchableOpacity
-            onPress={onPause}
+            onPress={handlePause}
+            disabled={isBusy}
             className="w-12 h-12 rounded-full bg-tf-error items-center justify-center"
           >
-            <Ionicons name="pause" size={24} color="#ffffff" />
+            {isPatching ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Ionicons name="pause" size={24} color="#ffffff" />
+            )}
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            onPress={onStart}
+            onPress={handleStart}
+            disabled={isBusy}
             className="w-12 h-12 rounded-full bg-tf-success items-center justify-center"
           >
-            <Ionicons name="play" size={24} color="#ffffff" />
+            {isCreating ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Ionicons name="play" size={24} color="#ffffff" />
+            )}
           </TouchableOpacity>
         )}
       </View>

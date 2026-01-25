@@ -16,6 +16,8 @@ export const TimerSchema = z
     created_at: z.string().datetime().openapi({ example: "2025-01-25T12:00:00.000Z" }),
     updated_at: z.string().datetime().openapi({ example: "2025-01-25T12:00:00.000Z" }),
     updated_by: z.string().uuid().nullable().openapi({ example: null }),
+    total_timer_session_time: z.number().openapi({ example: 3600, description: "Total timer session time for current day in seconds" }),
+    timer_session_in_progress_id: z.string().uuid().nullable().openapi({ example: "550e8400-e29b-41d4-a716-446655440003", description: "ID of the last timer session that has started_at but no ended_at" }),
   })
   .openapi("Timer");
 
