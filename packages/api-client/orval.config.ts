@@ -3,7 +3,7 @@ import { defineConfig } from "orval";
 export default defineConfig({
   timeflow: {
     input: {
-      target: "http://localhost:3000/api/openapi",
+      target: "./openapi.json",
     },
     output: {
       mode: "single",

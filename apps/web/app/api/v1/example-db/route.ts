@@ -1,11 +1,11 @@
-import { sql } from "@/db";
+import { db, sql } from "@/db";
 import { NextResponse } from "next/server";
 
 // Example endpoint showing database usage
 export async function GET() {
   try {
     // Example query - replace with your actual queries
-    const result = await sql`SELECT NOW() as current_time`.execute();
+    const result = await sql`SELECT NOW() as current_time`.execute(db);
     return NextResponse.json({ data: result.rows });
   } catch (error) {
     console.error("Database error:", error);

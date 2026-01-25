@@ -6,24 +6,32 @@
  * OpenAPI spec version: 1.0.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
+  CreateTimerRequest,
   ErrorResponse,
   GetApiV1ExampleDb200,
-  MeResponse
+  MeResponse,
+  TimerListResponse,
+  TimerResponse,
+  UpdateTimerRequest
 } from './models';
 
 import { customFetch } from './customFetch';
@@ -261,3 +269,560 @@ export function useGetApiV1ExampleDb<TData = Awaited<ReturnType<typeof getApiV1E
 
   return query;
 }
+
+
+
+
+
+/**
+ * List current user's timers (non-deleted)
+ * @summary List timers
+ */
+export type getApiV1TimersResponse200 = {
+  data: TimerListResponse
+  status: 200
+}
+
+export type getApiV1TimersResponse401 = {
+  data: ErrorResponse
+  status: 401
+}
+    
+export type getApiV1TimersResponseSuccess = (getApiV1TimersResponse200) & {
+  headers: Headers;
+};
+export type getApiV1TimersResponseError = (getApiV1TimersResponse401) & {
+  headers: Headers;
+};
+
+export type getApiV1TimersResponse = (getApiV1TimersResponseSuccess | getApiV1TimersResponseError)
+
+export const getGetApiV1TimersUrl = () => {
+
+
+  
+
+  return `/api/v1/timers`
+}
+
+export const getApiV1Timers = async ( options?: RequestInit): Promise<getApiV1TimersResponse> => {
+  
+  return customFetch<getApiV1TimersResponse>(getGetApiV1TimersUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getGetApiV1TimersQueryKey = () => {
+    return [
+    `/api/v1/timers`
+    ] as const;
+    }
+
+    
+export const getGetApiV1TimersQueryOptions = <TData = Awaited<ReturnType<typeof getApiV1Timers>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1Timers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetApiV1TimersQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiV1Timers>>> = ({ signal }) => getApiV1Timers({ signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiV1Timers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetApiV1TimersQueryResult = NonNullable<Awaited<ReturnType<typeof getApiV1Timers>>>
+export type GetApiV1TimersQueryError = ErrorResponse
+
+
+export function useGetApiV1Timers<TData = Awaited<ReturnType<typeof getApiV1Timers>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1Timers>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getApiV1Timers>>,
+          TError,
+          Awaited<ReturnType<typeof getApiV1Timers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetApiV1Timers<TData = Awaited<ReturnType<typeof getApiV1Timers>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1Timers>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getApiV1Timers>>,
+          TError,
+          Awaited<ReturnType<typeof getApiV1Timers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetApiV1Timers<TData = Awaited<ReturnType<typeof getApiV1Timers>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1Timers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List timers
+ */
+
+export function useGetApiV1Timers<TData = Awaited<ReturnType<typeof getApiV1Timers>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1Timers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetApiV1TimersQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+
+/**
+ * Create a new timer for the current user
+ * @summary Create timer
+ */
+export type postApiV1TimersResponse201 = {
+  data: TimerResponse
+  status: 201
+}
+
+export type postApiV1TimersResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postApiV1TimersResponse401 = {
+  data: ErrorResponse
+  status: 401
+}
+
+export type postApiV1TimersResponse409 = {
+  data: ErrorResponse
+  status: 409
+}
+    
+export type postApiV1TimersResponseSuccess = (postApiV1TimersResponse201) & {
+  headers: Headers;
+};
+export type postApiV1TimersResponseError = (postApiV1TimersResponse400 | postApiV1TimersResponse401 | postApiV1TimersResponse409) & {
+  headers: Headers;
+};
+
+export type postApiV1TimersResponse = (postApiV1TimersResponseSuccess | postApiV1TimersResponseError)
+
+export const getPostApiV1TimersUrl = () => {
+
+
+  
+
+  return `/api/v1/timers`
+}
+
+export const postApiV1Timers = async (createTimerRequest: CreateTimerRequest, options?: RequestInit): Promise<postApiV1TimersResponse> => {
+  
+  return customFetch<postApiV1TimersResponse>(getPostApiV1TimersUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createTimerRequest,)
+  }
+);}
+
+
+
+
+export const getPostApiV1TimersMutationOptions = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiV1Timers>>, TError,{data: CreateTimerRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postApiV1Timers>>, TError,{data: CreateTimerRequest}, TContext> => {
+
+const mutationKey = ['postApiV1Timers'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiV1Timers>>, {data: CreateTimerRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postApiV1Timers(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostApiV1TimersMutationResult = NonNullable<Awaited<ReturnType<typeof postApiV1Timers>>>
+    export type PostApiV1TimersMutationBody = CreateTimerRequest
+    export type PostApiV1TimersMutationError = ErrorResponse
+
+    /**
+ * @summary Create timer
+ */
+export const usePostApiV1Timers = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiV1Timers>>, TError,{data: CreateTimerRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postApiV1Timers>>,
+        TError,
+        {data: CreateTimerRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getPostApiV1TimersMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * Get a single timer by id
+ * @summary Get timer
+ */
+export type getApiV1TimersIdResponse200 = {
+  data: TimerResponse
+  status: 200
+}
+
+export type getApiV1TimersIdResponse401 = {
+  data: ErrorResponse
+  status: 401
+}
+
+export type getApiV1TimersIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+    
+export type getApiV1TimersIdResponseSuccess = (getApiV1TimersIdResponse200) & {
+  headers: Headers;
+};
+export type getApiV1TimersIdResponseError = (getApiV1TimersIdResponse401 | getApiV1TimersIdResponse404) & {
+  headers: Headers;
+};
+
+export type getApiV1TimersIdResponse = (getApiV1TimersIdResponseSuccess | getApiV1TimersIdResponseError)
+
+export const getGetApiV1TimersIdUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/timers/${id}`
+}
+
+export const getApiV1TimersId = async (id: string, options?: RequestInit): Promise<getApiV1TimersIdResponse> => {
+  
+  return customFetch<getApiV1TimersIdResponse>(getGetApiV1TimersIdUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getGetApiV1TimersIdQueryKey = (id?: string,) => {
+    return [
+    `/api/v1/timers/${id}`
+    ] as const;
+    }
+
+    
+export const getGetApiV1TimersIdQueryOptions = <TData = Awaited<ReturnType<typeof getApiV1TimersId>>, TError = ErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1TimersId>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetApiV1TimersIdQueryKey(id);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiV1TimersId>>> = ({ signal }) => getApiV1TimersId(id, { signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiV1TimersId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetApiV1TimersIdQueryResult = NonNullable<Awaited<ReturnType<typeof getApiV1TimersId>>>
+export type GetApiV1TimersIdQueryError = ErrorResponse
+
+
+export function useGetApiV1TimersId<TData = Awaited<ReturnType<typeof getApiV1TimersId>>, TError = ErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1TimersId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getApiV1TimersId>>,
+          TError,
+          Awaited<ReturnType<typeof getApiV1TimersId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetApiV1TimersId<TData = Awaited<ReturnType<typeof getApiV1TimersId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1TimersId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getApiV1TimersId>>,
+          TError,
+          Awaited<ReturnType<typeof getApiV1TimersId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetApiV1TimersId<TData = Awaited<ReturnType<typeof getApiV1TimersId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1TimersId>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get timer
+ */
+
+export function useGetApiV1TimersId<TData = Awaited<ReturnType<typeof getApiV1TimersId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1TimersId>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetApiV1TimersIdQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+
+/**
+ * Update an existing timer
+ * @summary Update timer
+ */
+export type patchApiV1TimersIdResponse200 = {
+  data: TimerResponse
+  status: 200
+}
+
+export type patchApiV1TimersIdResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type patchApiV1TimersIdResponse401 = {
+  data: ErrorResponse
+  status: 401
+}
+
+export type patchApiV1TimersIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+
+export type patchApiV1TimersIdResponse409 = {
+  data: ErrorResponse
+  status: 409
+}
+    
+export type patchApiV1TimersIdResponseSuccess = (patchApiV1TimersIdResponse200) & {
+  headers: Headers;
+};
+export type patchApiV1TimersIdResponseError = (patchApiV1TimersIdResponse400 | patchApiV1TimersIdResponse401 | patchApiV1TimersIdResponse404 | patchApiV1TimersIdResponse409) & {
+  headers: Headers;
+};
+
+export type patchApiV1TimersIdResponse = (patchApiV1TimersIdResponseSuccess | patchApiV1TimersIdResponseError)
+
+export const getPatchApiV1TimersIdUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/timers/${id}`
+}
+
+export const patchApiV1TimersId = async (id: string,
+    updateTimerRequest: UpdateTimerRequest, options?: RequestInit): Promise<patchApiV1TimersIdResponse> => {
+  
+  return customFetch<patchApiV1TimersIdResponse>(getPatchApiV1TimersIdUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateTimerRequest,)
+  }
+);}
+
+
+
+
+export const getPatchApiV1TimersIdMutationOptions = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchApiV1TimersId>>, TError,{id: string;data: UpdateTimerRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchApiV1TimersId>>, TError,{id: string;data: UpdateTimerRequest}, TContext> => {
+
+const mutationKey = ['patchApiV1TimersId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchApiV1TimersId>>, {id: string;data: UpdateTimerRequest}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  patchApiV1TimersId(id,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchApiV1TimersIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchApiV1TimersId>>>
+    export type PatchApiV1TimersIdMutationBody = UpdateTimerRequest
+    export type PatchApiV1TimersIdMutationError = ErrorResponse
+
+    /**
+ * @summary Update timer
+ */
+export const usePatchApiV1TimersId = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchApiV1TimersId>>, TError,{id: string;data: UpdateTimerRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof patchApiV1TimersId>>,
+        TError,
+        {id: string;data: UpdateTimerRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getPatchApiV1TimersIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * Soft-delete a timer
+ * @summary Delete timer
+ */
+export type deleteApiV1TimersIdResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteApiV1TimersIdResponse401 = {
+  data: ErrorResponse
+  status: 401
+}
+
+export type deleteApiV1TimersIdResponse404 = {
+  data: ErrorResponse
+  status: 404
+}
+    
+export type deleteApiV1TimersIdResponseSuccess = (deleteApiV1TimersIdResponse204) & {
+  headers: Headers;
+};
+export type deleteApiV1TimersIdResponseError = (deleteApiV1TimersIdResponse401 | deleteApiV1TimersIdResponse404) & {
+  headers: Headers;
+};
+
+export type deleteApiV1TimersIdResponse = (deleteApiV1TimersIdResponseSuccess | deleteApiV1TimersIdResponseError)
+
+export const getDeleteApiV1TimersIdUrl = (id: string,) => {
+
+
+  
+
+  return `/api/v1/timers/${id}`
+}
+
+export const deleteApiV1TimersId = async (id: string, options?: RequestInit): Promise<deleteApiV1TimersIdResponse> => {
+  
+  return customFetch<deleteApiV1TimersIdResponse>(getDeleteApiV1TimersIdUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+
+export const getDeleteApiV1TimersIdMutationOptions = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiV1TimersId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteApiV1TimersId>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteApiV1TimersId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteApiV1TimersId>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteApiV1TimersId(id,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteApiV1TimersIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteApiV1TimersId>>>
+    
+    export type DeleteApiV1TimersIdMutationError = ErrorResponse
+
+    /**
+ * @summary Delete timer
+ */
+export const useDeleteApiV1TimersId = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteApiV1TimersId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteApiV1TimersId>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteApiV1TimersIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
