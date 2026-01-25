@@ -12,6 +12,7 @@ import {
   TimerResponseSchema,
   CreateTimerRequestSchema,
   UpdateTimerRequestSchema,
+  TimerSessionInProgressSchema,
 } from "./schemas/timer.js";
 import {
   TimerSessionSchema,
@@ -20,6 +21,9 @@ import {
   CreateTimerSessionRequestSchema,
   UpdateTimerSessionRequestSchema,
 } from "./schemas/timer-session.js";
+import {
+  TimerStatsResponseSchema,
+} from "./schemas/timer-stats.js";
 
 extendZodWithOpenApi(z);
 
@@ -30,6 +34,7 @@ export const registry = new OpenAPIRegistry();
 registry.register("MeResponse", MeResponseSchema);
 registry.register("UpdateProfileRequest", UpdateProfileRequestSchema);
 registry.register("ErrorResponse", ErrorResponseSchema);
+registry.register("TimerSessionInProgress", TimerSessionInProgressSchema);
 registry.register("Timer", TimerSchema);
 registry.register("TimerListResponse", TimerListResponseSchema);
 registry.register("TimerResponse", TimerResponseSchema);
@@ -40,6 +45,7 @@ registry.register("TimerSessionResponse", TimerSessionResponseSchema);
 registry.register("TimerSessionListResponse", TimerSessionListResponseSchema);
 registry.register("CreateTimerSessionRequest", CreateTimerSessionRequestSchema);
 registry.register("UpdateTimerSessionRequest", UpdateTimerSessionRequestSchema);
+registry.register("TimerStatsResponse", TimerStatsResponseSchema);
 
 // Register the /api/v1/me endpoint
 registry.registerPath({
@@ -347,6 +353,64 @@ registry.registerPath({
   responses: {
     204: {
       description: "Timer deleted",
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Timer not found",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/v1/timers/{id}/stats",
+  summary: "Get timer statistics",
+  description: "Get total timer session time per day for a timer. Optionally filter by date range using start_date and end_date query parameters (DateOnly format: YYYY-MM-DD).",
+  tags: ["Timer"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({
+      id: z.string().uuid(),
+    }),
+    query: z.object({
+      start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().openapi({
+        example: "2025-01-01",
+        description: "Start date in YYYY-MM-DD format (DateOnly, optional)"
+      }),
+      end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().openapi({
+        example: "2025-01-31",
+        description: "End date in YYYY-MM-DD format (DateOnly, optional)"
+      }),
+    }),
+  },
+  responses: {
+    200: {
+      description: "Timer statistics by day",
+      content: {
+        "application/json": {
+          schema: TimerStatsResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Bad request - invalid date format or date range",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
     },
     401: {
       description: "Unauthorized",

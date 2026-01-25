@@ -24,6 +24,7 @@
     "react-dom": "19.1.0"
   },
   "devDependencies": {
+    "@types/luxon": "^3.7.1",
     "@types/node": "^22.10.7",
     "@types/pg": "^8.16.0",
     "@types/react": "^19.1.10",

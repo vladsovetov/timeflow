@@ -1,6 +1,7 @@
 import { View } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { usePostApiV1Timers } from "@acme/api-client";
+import type { CreateTimerRequest } from "@acme/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import * as SecureStore from "expo-secure-store";
@@ -39,7 +40,18 @@ export default function CreateTimerScreen() {
   });
 
   const onSubmit = form.handleSubmit((data) => {
-    createMutation.mutate({ data });
+    if (typeof data.timer_type !== "string" || typeof data.name !== "string") return;
+    const payload: CreateTimerRequest = {
+      timer_type: data.timer_type,
+      name: data.name,
+    };
+    if (data.color != null && data.color !== "") payload.color = data.color;
+    if (typeof data.sort_order === "number") payload.sort_order = data.sort_order;
+    if (data.min_time_minutes != null && data.min_time_minutes > 0) {
+      payload.min_time = data.min_time_minutes * 60;
+    }
+    if (typeof data.is_archived === "boolean") payload.is_archived = data.is_archived;
+    createMutation.mutate({ data: payload });
   });
 
   return (

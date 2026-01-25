@@ -27,6 +27,7 @@ export interface Database {
     name: string
     color: string | null
     sort_order: number
+    min_time: number | null
     is_archived: boolean
     is_deleted: boolean
     created_at: Date

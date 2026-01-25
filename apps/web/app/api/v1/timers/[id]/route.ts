@@ -36,11 +36,9 @@ async function calculateTotalTimerSessionTime(
   let totalSeconds = 0;
 
   for (const session of sessions) {
+    if (session.ended_at == null) continue; // exclude in-progress; client adds now - started_at
     const sessionStart = DateTime.fromJSDate(session.started_at, { zone: tz });
-    const sessionEnd = session.ended_at
-      ? DateTime.fromJSDate(session.ended_at, { zone: tz })
-      : now;
-
+    const sessionEnd = DateTime.fromJSDate(session.ended_at, { zone: tz });
     const duration = sessionEnd.diff(sessionStart, "seconds").seconds;
     totalSeconds += Math.max(0, duration);
   }
@@ -48,13 +46,13 @@ async function calculateTotalTimerSessionTime(
   return Math.round(totalSeconds);
 }
 
-async function getInProgressTimerSessionId(
+async function getInProgressTimerSession(
   timerId: string,
   userId: string
-): Promise<string | null> {
+): Promise<{ id: string; started_at: string } | null> {
   const session = await db
     .selectFrom("timer_session")
-    .select("id")
+    .select(["id", "started_at"])
     .where("timer_id", "=", timerId)
     .where("user_id", "=", userId)
     .where("is_deleted", "=", false)
@@ -62,7 +60,11 @@ async function getInProgressTimerSessionId(
     .orderBy("started_at", "desc")
     .executeTakeFirst();
 
-  return session?.id || null;
+  if (!session) return null;
+  return {
+    id: session.id,
+    started_at: session.started_at.toISOString(),
+  };
 }
 
 type AuthOk = { user: { id: string } };
@@ -121,7 +123,7 @@ export async function GET(
     user.id,
     userRecord?.timezone || null
   );
-  const inProgressSessionId = await getInProgressTimerSessionId(
+  const timer_session_in_progress = await getInProgressTimerSession(
     timer.id,
     user.id
   );
@@ -130,7 +132,7 @@ export async function GET(
     data: {
       ...timer,
       total_timer_session_time: totalTime,
-      timer_session_in_progress_id: inProgressSessionId,
+      timer_session_in_progress,
     },
   });
 }
@@ -149,6 +151,7 @@ export async function PATCH(
     name?: string;
     color?: string;
     sort_order?: number;
+    min_time?: number | null;
     is_archived?: boolean;
     timer_type?: string;
   };
@@ -180,6 +183,7 @@ export async function PATCH(
     name?: string;
     color?: string | null;
     sort_order?: number;
+    min_time?: number | null;
     is_archived?: boolean;
     timer_type?: string;
     updated_at?: Date;
@@ -206,6 +210,18 @@ export async function PATCH(
       );
     }
     updates.sort_order = body.sort_order;
+  }
+  if (body.min_time !== undefined) {
+    if (body.min_time === null) {
+      updates.min_time = null;
+    } else if (typeof body.min_time === "number" && Number.isFinite(body.min_time) && body.min_time >= 0) {
+      updates.min_time = body.min_time;
+    } else {
+      return NextResponse.json(
+        { error: "min_time must be null or a non-negative finite number" } satisfies ErrorResponse,
+        { status: 400 }
+      );
+    }
   }
   if (body.is_archived !== undefined) {
     if (typeof body.is_archived !== "boolean") {
@@ -247,6 +263,13 @@ export async function PATCH(
       .returningAll()
       .execute();
 
+    if (!row) {
+      return NextResponse.json(
+        { error: "Timer not found" } satisfies ErrorResponse,
+        { status: 404 }
+      );
+    }
+
     const userRecord = await db
       .selectFrom("user")
       .select(["timezone"])
@@ -259,7 +282,7 @@ export async function PATCH(
       user.id,
       userRecord?.timezone || null
     );
-    const inProgressSessionId = await getInProgressTimerSessionId(
+    const timer_session_in_progress = await getInProgressTimerSession(
       row.id,
       user.id
     );
@@ -268,7 +291,7 @@ export async function PATCH(
       data: {
         ...row,
         total_timer_session_time: totalTime,
-        timer_session_in_progress_id: inProgressSessionId,
+        timer_session_in_progress,
       },
     });
   } catch (e: unknown) {

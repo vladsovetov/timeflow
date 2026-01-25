@@ -36,11 +36,9 @@ async function calculateTotalTimerSessionTime(
   let totalSeconds = 0;
 
   for (const session of sessions) {
+    if (session.ended_at == null) continue; // exclude in-progress; client adds now - started_at
     const sessionStart = DateTime.fromJSDate(session.started_at, { zone: tz });
-    const sessionEnd = session.ended_at
-      ? DateTime.fromJSDate(session.ended_at, { zone: tz })
-      : now;
-
+    const sessionEnd = DateTime.fromJSDate(session.ended_at, { zone: tz });
     const duration = sessionEnd.diff(sessionStart, "seconds").seconds;
     totalSeconds += Math.max(0, duration);
   }
@@ -48,13 +46,13 @@ async function calculateTotalTimerSessionTime(
   return Math.round(totalSeconds);
 }
 
-async function getInProgressTimerSessionId(
+async function getInProgressTimerSession(
   timerId: string,
   userId: string
-): Promise<string | null> {
+): Promise<{ id: string; started_at: string } | null> {
   const session = await db
     .selectFrom("timer_session")
-    .select("id")
+    .select(["id", "started_at"])
     .where("timer_id", "=", timerId)
     .where("user_id", "=", userId)
     .where("is_deleted", "=", false)
@@ -62,7 +60,11 @@ async function getInProgressTimerSessionId(
     .orderBy("started_at", "desc")
     .executeTakeFirst();
 
-  return session?.id || null;
+  if (!session) return null;
+  return {
+    id: session.id,
+    started_at: session.started_at.toISOString(),
+  };
 }
 
 export async function GET() {
@@ -105,14 +107,14 @@ export async function GET() {
         user.id,
         userRecord?.timezone || null
       );
-      const inProgressSessionId = await getInProgressTimerSessionId(
+      const timer_session_in_progress = await getInProgressTimerSession(
         timer.id,
         user.id
       );
       return {
         ...timer,
         total_timer_session_time: totalTime,
-        timer_session_in_progress_id: inProgressSessionId,
+        timer_session_in_progress,
       };
     })
   );
@@ -142,6 +144,7 @@ export async function POST(request: Request) {
     name?: string;
     color?: string;
     sort_order?: number;
+    min_time?: number | null;
     is_archived?: boolean;
   };
   try {
@@ -153,7 +156,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { timer_type, name, color, sort_order, is_archived } = body;
+  const { timer_type, name, color, sort_order, min_time, is_archived } = body;
   if (typeof timer_type !== "string" || !timer_type.trim()) {
     return NextResponse.json(
       { error: "timer_type is required and must be a non-empty string" } satisfies ErrorResponse,
@@ -181,22 +184,46 @@ export async function POST(request: Request) {
     typeof sort_order === "number" && Number.isFinite(sort_order)
       ? sort_order
       : 0;
+  let minTime: number | null = null;
+  if (min_time !== undefined && min_time !== null) {
+    if (typeof min_time !== "number" || !Number.isFinite(min_time) || min_time < 0) {
+      return NextResponse.json(
+        { error: "min_time must be a non-negative finite number" } satisfies ErrorResponse,
+        { status: 400 }
+      );
+    }
+    minTime = min_time;
+  }
   const isArchived = typeof is_archived === "boolean" ? is_archived : false;
 
   try {
-    const result = await sql`
-      INSERT INTO timer (user_id, timer_type, name, color, sort_order, is_archived, updated_by)
-      VALUES (${user.id}, ${timer_type}, ${nameVal}, ${colorVal}, ${sortOrder}, ${isArchived}, ${user.id})
-      RETURNING *
-    `.execute(db);
-    const row = result.rows[0];
+    const row = await db
+      .insertInto("timer")
+      .values({
+        id: sql`gen_random_uuid()`,
+        user_id: user.id,
+        timer_type,
+        name: nameVal,
+        color: colorVal,
+        sort_order: sortOrder,
+        min_time: minTime,
+        is_archived: isArchived,
+        is_deleted: false,
+        created_at: sql`now()`,
+        updated_at: sql`now()`,
+        updated_by: user.id,
+      })
+      .returningAll()
+      .executeTakeFirst();
+
     if (!row) {
       return NextResponse.json(
         { error: "Failed to create timer" } satisfies ErrorResponse,
         { status: 500 }
       );
     }
-    const inProgressSessionId = await getInProgressTimerSessionId(
+
+    const timer_session_in_progress = await getInProgressTimerSession(
       row.id,
       user.id
     );
@@ -205,7 +232,7 @@ export async function POST(request: Request) {
         data: {
           ...row,
           total_timer_session_time: 0,
-          timer_session_in_progress_id: inProgressSessionId,
+          timer_session_in_progress,
         },
       },
       { status: 201 }

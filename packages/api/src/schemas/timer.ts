@@ -3,6 +3,13 @@ import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 
 extendZodWithOpenApi(z);
 
+export const TimerSessionInProgressSchema = z
+  .object({
+    id: z.string().uuid().openapi({ example: "550e8400-e29b-41d4-a716-446655440003" }),
+    started_at: z.string().datetime().openapi({ example: "2025-01-25T12:00:00.000Z", description: "When the current session started" }),
+  })
+  .openapi("TimerSessionInProgress");
+
 export const TimerSchema = z
   .object({
     id: z.string().uuid().openapi({ example: "550e8400-e29b-41d4-a716-446655440000" }),
@@ -11,13 +18,17 @@ export const TimerSchema = z
     name: z.string().openapi({ example: "Deep work" }),
     color: z.string().nullable().openapi({ example: "#3b82f6" }),
     sort_order: z.number().openapi({ example: 0 }),
+    min_time: z.number().nullable().openapi({ example: 300, description: "Minimum session duration in seconds" }),
     is_archived: z.boolean().openapi({ example: false }),
     is_deleted: z.boolean().openapi({ example: false }),
     created_at: z.string().datetime().openapi({ example: "2025-01-25T12:00:00.000Z" }),
     updated_at: z.string().datetime().openapi({ example: "2025-01-25T12:00:00.000Z" }),
     updated_by: z.string().uuid().nullable().openapi({ example: null }),
     total_timer_session_time: z.number().openapi({ example: 3600, description: "Total timer session time for current day in seconds" }),
-    timer_session_in_progress_id: z.string().uuid().nullable().openapi({ example: "550e8400-e29b-41d4-a716-446655440003", description: "ID of the last timer session that has started_at but no ended_at" }),
+    timer_session_in_progress: TimerSessionInProgressSchema.nullable().openapi({
+      example: { id: "550e8400-e29b-41d4-a716-446655440003", started_at: "2025-01-25T12:00:00.000Z" },
+      description: "The timer session currently in progress (started_at set, no ended_at), or null",
+    }),
   })
   .openapi("Timer");
 
@@ -39,6 +50,7 @@ export const CreateTimerRequestSchema = z
     name: z.string().min(1).openapi({ example: "Deep work" }),
     color: z.string().optional().openapi({ example: "#3b82f6" }),
     sort_order: z.number().optional().openapi({ example: 0 }),
+    min_time: z.number().optional().openapi({ example: 300, description: "Minimum session duration in seconds" }),
     is_archived: z.boolean().optional().openapi({ example: false }),
   })
   .openapi("CreateTimerRequest");
@@ -48,6 +60,7 @@ export const UpdateTimerRequestSchema = z
     name: z.string().min(1).optional().openapi({ example: "Deep work" }),
     color: z.string().optional().openapi({ example: "#3b82f6" }),
     sort_order: z.number().optional().openapi({ example: 0 }),
+    min_time: z.number().nullable().optional().openapi({ example: 300, description: "Minimum session duration in seconds" }),
     is_archived: z.boolean().optional().openapi({ example: false }),
     timer_type: z.string().min(1).optional().openapi({ example: "focus" }),
   })

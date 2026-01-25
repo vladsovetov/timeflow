@@ -26,6 +26,7 @@ const createSchema = yup.object({
   name: yup.string().min(1, "Name is required").required(),
   color: yup.string().optional(),
   sort_order: yup.number().optional().default(0),
+  min_time_minutes: yup.number().nullable().min(0).optional().transform((v) => (v === "" || v == null ? null : v)),
   is_archived: yup.boolean().optional().default(false),
 });
 
@@ -34,13 +35,18 @@ const updateSchema = yup.object({
   name: yup.string().min(1).optional(),
   color: yup.string().optional(),
   sort_order: yup.number().optional(),
+  min_time_minutes: yup.number().nullable().min(0).optional().transform((v) => (v === "" || v == null ? null : v)),
   is_archived: yup.boolean().optional(),
 });
 
 export type TimerFormData = CreateTimerRequest | UpdateTimerRequest;
 
+export type TimerFormValues = TimerFormData & {
+  min_time_minutes?: number | null;
+};
+
 interface TimerFormProps {
-  form: UseFormReturn<TimerFormData>;
+  form: UseFormReturn<TimerFormValues>;
   isUpdate?: boolean;
 }
 
@@ -184,6 +190,36 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
 
         <Controller
           control={control}
+          name="min_time_minutes"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <View className="mb-4">
+              <Text className="text-tf-text-primary text-sm mb-2">
+                Min time (minutes)
+              </Text>
+              <TextInput
+                variant="default"
+                placeholder="e.g. 30"
+                keyboardType="numeric"
+                value={value != null ? value.toString() : ""}
+                onChangeText={(text) => {
+                  if (text === "") {
+                    onChange(null);
+                    return;
+                  }
+                  const num = parseInt(text, 10);
+                  onChange(isNaN(num) ? null : num);
+                }}
+                onBlur={onBlur}
+              />
+              <Text className="text-tf-text-secondary text-xs mt-1">
+                Optional. Daily goal in minutes. Shows a progress bar on the timer card.
+              </Text>
+            </View>
+          )}
+        />
+
+        <Controller
+          control={control}
           name="is_archived"
           render={({ field: { onChange, value } }) => (
             <View className="mb-6 flex-row items-center justify-between">
@@ -203,18 +239,19 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
 }
 
 export function useTimerForm(
-  defaultValues?: Partial<TimerFormData>,
+  defaultValues?: Partial<TimerFormValues>,
   isUpdate = false
 ) {
   const schema = isUpdate ? updateSchema : createSchema;
 
-  return useForm<TimerFormData>({
+  return useForm<TimerFormValues>({
     resolver: yupResolver(schema),
     defaultValues: {
       timer_type: defaultValues?.timer_type ?? "",
       name: defaultValues?.name ?? "",
       color: defaultValues?.color ?? "",
       sort_order: defaultValues?.sort_order ?? 0,
+      min_time_minutes: defaultValues?.min_time_minutes ?? null,
       is_archived: defaultValues?.is_archived ?? false,
     },
   });

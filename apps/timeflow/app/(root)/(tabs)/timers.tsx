@@ -3,12 +3,10 @@ import { useRouter } from "expo-router";
 import { useGetApiV1Timers } from "@acme/api-client";
 import { Button } from "@/src/components/Button/Button";
 import { Timer } from "@/src/components/Timer/Timer";
-import { useState } from "react";
 
 export default function TimersScreen() {
   const router = useRouter();
   const { data, isLoading, error, refetch } = useGetApiV1Timers();
-  const [runningTimerId, setRunningTimerId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -64,9 +62,8 @@ export default function TimersScreen() {
               <View className="mb-3">
                 <Timer
                   timer={item}
-                  isRunning={runningTimerId === item.id}
-                  onStart={() => setRunningTimerId(item.id)}
-                  onPause={() => setRunningTimerId(null)}
+                  onStart={() => {}}
+                  onPause={() => {}}
                 />
               </View>
             )}

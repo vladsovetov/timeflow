@@ -13,5 +13,7 @@ export interface CreateTimerRequest {
   name: string;
   color?: string;
   sort_order?: number;
+  /** Minimum session duration in seconds */
+  min_time?: number;
   is_archived?: boolean;
 }

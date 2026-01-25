@@ -28,6 +28,13 @@ export default function RootLayout() {
             name="timers/[id]"
             options={{
               presentation: "modal",
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="timers/[id]/edit"
+            options={{
+              presentation: "modal",
               headerShown: true,
               title: "Edit Timer",
               headerStyle: {
@@ -42,6 +49,18 @@ export default function RootLayout() {
               presentation: "modal",
               headerShown: true,
               title: "Select Color",
+              headerStyle: {
+                backgroundColor: "#121225",
+              },
+              headerTintColor: "#FFFFFF",
+            }}
+          />
+          <Stack.Screen
+            name="timers/[id]/sessions"
+            options={{
+              presentation: "fullScreenModal",
+              headerShown: true,
+              title: "Timer Sessions",
               headerStyle: {
                 backgroundColor: "#121225",
               },

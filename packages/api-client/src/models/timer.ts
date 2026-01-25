@@ -6,6 +6,8 @@
  * OpenAPI spec version: 1.0.0
  */
 
+import type { TimerSessionInProgress } from "./timerSessionInProgress";
+
 export interface Timer {
   id: string;
   user_id: string;
@@ -14,6 +16,11 @@ export interface Timer {
   /** @nullable */
   color: string | null;
   sort_order: number;
+  /**
+   * Minimum session duration in seconds
+   * @nullable
+   */
+  min_time: number | null;
   is_archived: boolean;
   is_deleted: boolean;
   created_at: string;
@@ -23,8 +30,8 @@ export interface Timer {
   /** Total timer session time for current day in seconds */
   total_timer_session_time: number;
   /**
-   * ID of the last timer session that has started_at but no ended_at
+   * The timer session currently in progress (started_at set, no ended_at), or null
    * @nullable
    */
-  timer_session_in_progress_id: string | null;
+  timer_session_in_progress: TimerSessionInProgress | null;
 }

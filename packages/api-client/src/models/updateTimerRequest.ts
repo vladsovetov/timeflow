@@ -11,6 +11,11 @@ export interface UpdateTimerRequest {
   name?: string;
   color?: string;
   sort_order?: number;
+  /**
+   * Minimum session duration in seconds
+   * @nullable
+   */
+  min_time?: number | null;
   is_archived?: boolean;
   /** @minLength 1 */
   timer_type?: string;
