@@ -2,13 +2,21 @@ import { Pressable, Text, Platform, type PressableProps } from "react-native";
 import { twMerge } from "tailwind-merge";
 
 const buttonStyles = {
-  primary: "bg-tf-purple text-white",
-  secondary:
-    "bg-tf-bg-secondary border border-tf-purple text-tf-text-primary",
-  ghost: "bg-transparent text-tf-text-secondary active:bg-tf-bg-tertiary",
-  outline: "border border-tf-purple text-tf-purple",
-  danger: "bg-tf-error text-white",
-  success: "bg-tf-success text-white",
+  primary: "bg-tf-purple",
+  secondary: "bg-tf-bg-secondary border border-tf-purple",
+  ghost: "bg-transparent active:bg-tf-bg-tertiary",
+  outline: "border border-tf-purple",
+  danger: "bg-tf-error",
+  success: "bg-tf-success",
+};
+
+const textStyles = {
+  primary: "text-white",
+  secondary: "text-tf-text-primary",
+  ghost: "text-tf-text-secondary",
+  outline: "text-tf-purple",
+  danger: "text-white",
+  success: "text-white",
 };
 
 export type ButtonVariant = keyof typeof buttonStyles;
@@ -52,6 +60,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const variantClasses = buttonStyles[variant];
+  const textColorClasses = textStyles[variant];
   const baseClasses = "px-4 py-2 rounded-lg items-center justify-center";
   const disabledClasses = disabled ? "opacity-50" : "";
   const combinedClasses = twMerge(
@@ -71,7 +80,9 @@ export function Button({
       {...props}
     >
       {typeof children === "string" ? (
-        <Text className="font-semibold">{children}</Text>
+        <Text className={twMerge("font-semibold", textColorClasses)}>
+          {children}
+        </Text>
       ) : (
         children
       )}

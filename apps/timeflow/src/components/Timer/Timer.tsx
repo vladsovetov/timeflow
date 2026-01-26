@@ -169,12 +169,12 @@ export function Timer({
       </View>
 
       <View className="ml-2 flex-row items-center gap-2">
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={handleNavigateToSessions}
           className="w-10 h-10 items-center justify-center"
         >
           <Ionicons name="time-outline" size={24} color={borderColor} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         
         {isRunning ? (
           <TouchableOpacity

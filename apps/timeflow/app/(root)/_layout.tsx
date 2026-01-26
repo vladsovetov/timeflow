@@ -67,6 +67,18 @@ export default function RootLayout() {
               headerTintColor: "#FFFFFF",
             }}
           />
+          <Stack.Screen
+            name="profile/edit"
+            options={{
+              presentation: "modal",
+              headerShown: true,
+              title: "Edit Profile",
+              headerStyle: {
+                backgroundColor: "#121225",
+              },
+              headerTintColor: "#FFFFFF",
+            }}
+          />
         </Stack>
       </SignedIn>
       <SignedOut>

@@ -42,6 +42,7 @@
     "react-native-reanimated": "^4.2.1",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.16.0",
+    "react-native-select-dropdown": "^4.0.1",
     "reanimated-color-picker": "^4.2.0",
     "tailwind-merge": "^3.4.0",
     "yup": "^1.4.0"
