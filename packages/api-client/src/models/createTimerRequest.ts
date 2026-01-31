@@ -9,6 +9,8 @@
 export interface CreateTimerRequest {
   /** @minLength 1 */
   timer_type: string;
+  /** Timer category ID (Useful, Important, Procrastination, or custom) */
+  category_id?: string;
   /** @minLength 1 */
   name: string;
   color?: string;

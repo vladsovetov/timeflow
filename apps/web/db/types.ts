@@ -3,6 +3,13 @@
  * Extend this interface as tables are added via migrations.
  */
 export interface Database {
+  timer_category: {
+    id: string
+    user_id: string | null
+    name: string
+    color: string
+    sort_order: number
+  }
   timer_type_enum: {
     key: string
     name: string
@@ -24,6 +31,7 @@ export interface Database {
     id: string
     user_id: string
     timer_type: string
+    category_id: string | null
     name: string
     color: string | null
     sort_order: number

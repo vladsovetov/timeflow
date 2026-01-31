@@ -15,6 +15,11 @@ import {
   TimerSessionInProgressSchema,
 } from "./schemas/timer.js";
 import {
+  TimerCategorySchema,
+  TimerCategoryListResponseSchema,
+  CreateTimerCategoryRequestSchema,
+} from "./schemas/timer-category.js";
+import {
   TimerSessionSchema,
   TimerSessionResponseSchema,
   TimerSessionListResponseSchema,
@@ -40,6 +45,9 @@ registry.register("TimerListResponse", TimerListResponseSchema);
 registry.register("TimerResponse", TimerResponseSchema);
 registry.register("CreateTimerRequest", CreateTimerRequestSchema);
 registry.register("UpdateTimerRequest", UpdateTimerRequestSchema);
+registry.register("TimerCategory", TimerCategorySchema);
+registry.register("TimerCategoryListResponse", TimerCategoryListResponseSchema);
+registry.register("CreateTimerCategoryRequest", CreateTimerCategoryRequestSchema);
 registry.register("TimerSession", TimerSessionSchema);
 registry.register("TimerSessionResponse", TimerSessionResponseSchema);
 registry.register("TimerSessionListResponse", TimerSessionListResponseSchema);
@@ -126,6 +134,79 @@ registry.registerPath({
     },
     404: {
       description: "User not found",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/v1/timer-categories",
+  summary: "List timer categories",
+  description: "List system categories (Useful, Important, Procrastination) and user's custom categories",
+  tags: ["TimerCategory"],
+  security: [{ bearerAuth: [] }],
+  responses: {
+    200: {
+      description: "List of timer categories",
+      content: {
+        "application/json": {
+          schema: TimerCategoryListResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/v1/timer-categories",
+  summary: "Create custom timer category",
+  description: "Create a custom timer category for the current user",
+  tags: ["TimerCategory"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: CreateTimerCategoryRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: "Timer category created",
+      content: {
+        "application/json": {
+          schema: z.object({
+            data: TimerCategorySchema,
+          }),
+        },
+      },
+    },
+    400: {
+      description: "Bad request",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Unauthorized",
       content: {
         "application/json": {
           schema: ErrorResponseSchema,

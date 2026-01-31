@@ -5,13 +5,16 @@
  * API for the Timeflow application
  * OpenAPI spec version: 1.0.0
  */
-
-import type { TimerSessionInProgress } from "./timerSessionInProgress";
+import type { TimerCategory } from './timerCategory';
+import type { TimerTimerSessionInProgress } from './timerTimerSessionInProgress';
 
 export interface Timer {
   id: string;
   user_id: string;
   timer_type: string;
+  /** @nullable */
+  category_id: string | null;
+  category: TimerCategory;
   name: string;
   /** @nullable */
   color: string | null;
@@ -29,9 +32,5 @@ export interface Timer {
   updated_by: string | null;
   /** Total timer session time for current day in seconds */
   total_timer_session_time: number;
-  /**
-   * The timer session currently in progress (started_at set, no ended_at), or null
-   * @nullable
-   */
-  timer_session_in_progress: TimerSessionInProgress | null;
+  timer_session_in_progress: TimerTimerSessionInProgress;
 }

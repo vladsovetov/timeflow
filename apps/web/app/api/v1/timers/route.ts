@@ -93,15 +93,59 @@ export async function GET() {
 
   const timers = await db
     .selectFrom("timer")
-    .selectAll()
-    .where("user_id", "=", user.id)
-    .where("is_deleted", "=", false)
-    .orderBy("sort_order", "asc")
-    .orderBy("created_at", "asc")
+    .leftJoin("timer_category", "timer.category_id", "timer_category.id")
+    .select([
+      "timer.id",
+      "timer.user_id",
+      "timer.timer_type",
+      "timer.category_id",
+      "timer.name",
+      "timer.color",
+      "timer.sort_order",
+      "timer.min_time",
+      "timer.is_archived",
+      "timer.is_deleted",
+      "timer.created_at",
+      "timer.updated_at",
+      "timer.updated_by",
+      "timer_category.name as category_name",
+      "timer_category.color as category_color",
+      "timer_category.sort_order as category_sort_order",
+      "timer_category.user_id as category_user_id",
+    ])
+    .where("timer.user_id", "=", user.id)
+    .where("timer.is_deleted", "=", false)
+    .orderBy("timer.sort_order", "asc")
+    .orderBy("timer.created_at", "asc")
     .execute();
 
   const timersWithTotalTime = await Promise.all(
-    timers.map(async (timer) => {
+    timers.map(async (row) => {
+      const timer = {
+        id: row.id,
+        user_id: row.user_id,
+        timer_type: row.timer_type,
+        category_id: row.category_id,
+        name: row.name,
+        color: row.color,
+        sort_order: row.sort_order,
+        min_time: row.min_time,
+        is_archived: row.is_archived,
+        is_deleted: row.is_deleted,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        updated_by: row.updated_by,
+        category:
+          row.category_id != null && row.category_name != null
+            ? {
+                id: row.category_id,
+                user_id: row.category_user_id,
+                name: row.category_name,
+                color: row.category_color,
+                sort_order: row.category_sort_order ?? 0,
+              }
+            : null,
+      };
       const totalTime = await calculateTotalTimerSessionTime(
         timer.id,
         user.id,
@@ -141,6 +185,7 @@ export async function POST(request: Request) {
 
   let body: {
     timer_type?: string;
+    category_id?: string;
     name?: string;
     color?: string;
     sort_order?: number;
@@ -156,7 +201,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { timer_type, name, color, sort_order, min_time, is_archived } = body;
+  const { timer_type, category_id, name, color, sort_order, min_time, is_archived } = body;
   if (typeof timer_type !== "string" || !timer_type.trim()) {
     return NextResponse.json(
       { error: "timer_type is required and must be a non-empty string" } satisfies ErrorResponse,
@@ -176,6 +221,25 @@ export async function POST(request: Request) {
       { error: "Invalid timer_type" } satisfies ErrorResponse,
       { status: 400 }
     );
+  }
+
+  let categoryIdVal: string | null = null;
+  if (category_id != null && category_id.trim() !== "") {
+    const categoryExists = await db
+      .selectFrom("timer_category")
+      .select("id")
+      .where("id", "=", category_id.trim())
+      .where((eb) =>
+        eb.or([eb("user_id", "is", null), eb("user_id", "=", user.id)])
+      )
+      .executeTakeFirst();
+    if (!categoryExists) {
+      return NextResponse.json(
+        { error: "Invalid category_id" } satisfies ErrorResponse,
+        { status: 400 }
+      );
+    }
+    categoryIdVal = category_id.trim();
   }
 
   const nameVal = name.trim();
@@ -203,6 +267,7 @@ export async function POST(request: Request) {
         id: sql`gen_random_uuid()`,
         user_id: user.id,
         timer_type,
+        category_id: categoryIdVal,
         name: nameVal,
         color: colorVal,
         sort_order: sortOrder,
@@ -227,10 +292,30 @@ export async function POST(request: Request) {
       row.id,
       user.id
     );
+
+    let category = null;
+    if (row.category_id) {
+      const cat = await db
+        .selectFrom("timer_category")
+        .selectAll()
+        .where("id", "=", row.category_id)
+        .executeTakeFirst();
+      if (cat) {
+        category = {
+          id: cat.id,
+          user_id: cat.user_id,
+          name: cat.name,
+          color: cat.color,
+          sort_order: cat.sort_order,
+        };
+      }
+    }
+
     return NextResponse.json(
       {
         data: {
           ...row,
+          category,
           total_timer_session_time: 0,
           timer_session_in_progress,
         },

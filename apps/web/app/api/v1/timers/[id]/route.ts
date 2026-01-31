@@ -96,15 +96,34 @@ export async function GET(
 
   const { id } = await context.params;
 
-  const timer = await db
+  const timerRow = await db
     .selectFrom("timer")
-    .selectAll()
-    .where("id", "=", id)
-    .where("user_id", "=", user.id)
-    .where("is_deleted", "=", false)
+    .leftJoin("timer_category", "timer.category_id", "timer_category.id")
+    .select([
+      "timer.id",
+      "timer.user_id",
+      "timer.timer_type",
+      "timer.category_id",
+      "timer.name",
+      "timer.color",
+      "timer.sort_order",
+      "timer.min_time",
+      "timer.is_archived",
+      "timer.is_deleted",
+      "timer.created_at",
+      "timer.updated_at",
+      "timer.updated_by",
+      "timer_category.name as category_name",
+      "timer_category.color as category_color",
+      "timer_category.sort_order as category_sort_order",
+      "timer_category.user_id as category_user_id",
+    ])
+    .where("timer.id", "=", id)
+    .where("timer.user_id", "=", user.id)
+    .where("timer.is_deleted", "=", false)
     .executeTakeFirst();
 
-  if (!timer) {
+  if (!timerRow) {
     return NextResponse.json(
       { error: "Timer not found" } satisfies ErrorResponse,
       { status: 404 }
@@ -119,14 +138,40 @@ export async function GET(
     .executeTakeFirst();
 
   const totalTime = await calculateTotalTimerSessionTime(
-    timer.id,
+    timerRow.id,
     user.id,
     userRecord?.timezone || null
   );
   const timer_session_in_progress = await getInProgressTimerSession(
-    timer.id,
+    timerRow.id,
     user.id
   );
+
+  const timer = {
+    id: timerRow.id,
+    user_id: timerRow.user_id,
+    timer_type: timerRow.timer_type,
+    category_id: timerRow.category_id,
+    name: timerRow.name,
+    color: timerRow.color,
+    sort_order: timerRow.sort_order,
+    min_time: timerRow.min_time,
+    is_archived: timerRow.is_archived,
+    is_deleted: timerRow.is_deleted,
+    created_at: timerRow.created_at,
+    updated_at: timerRow.updated_at,
+    updated_by: timerRow.updated_by,
+    category:
+      timerRow.category_id != null && timerRow.category_name != null
+        ? {
+            id: timerRow.category_id,
+            user_id: timerRow.category_user_id,
+            name: timerRow.category_name,
+            color: timerRow.category_color,
+            sort_order: timerRow.category_sort_order ?? 0,
+          }
+        : null,
+  };
 
   return NextResponse.json({
     data: {
@@ -154,6 +199,7 @@ export async function PATCH(
     min_time?: number | null;
     is_archived?: boolean;
     timer_type?: string;
+    category_id?: string | null;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -186,6 +232,7 @@ export async function PATCH(
     min_time?: number | null;
     is_archived?: boolean;
     timer_type?: string;
+    category_id?: string | null;
     updated_at?: Date;
     updated_by?: string;
   } = { updated_at: new Date(), updated_by: user.id };
@@ -248,6 +295,32 @@ export async function PATCH(
     }
     updates.timer_type = body.timer_type;
   }
+  if (body.category_id !== undefined) {
+    if (body.category_id === null || body.category_id === "") {
+      updates.category_id = null;
+    } else if (typeof body.category_id === "string" && body.category_id.trim() !== "") {
+      const categoryExists = await db
+        .selectFrom("timer_category")
+        .select("id")
+        .where("id", "=", body.category_id.trim())
+        .where((eb) =>
+          eb.or([eb("user_id", "is", null), eb("user_id", "=", user.id)])
+        )
+        .executeTakeFirst();
+      if (!categoryExists) {
+        return NextResponse.json(
+          { error: "Invalid category_id" } satisfies ErrorResponse,
+          { status: 400 }
+        );
+      }
+      updates.category_id = body.category_id.trim();
+    } else {
+      return NextResponse.json(
+        { error: "category_id must be a valid UUID or null" } satisfies ErrorResponse,
+        { status: 400 }
+      );
+    }
+  }
 
   if (Object.keys(updates).length <= 2) {
     return NextResponse.json({ data: existing });
@@ -287,9 +360,28 @@ export async function PATCH(
       user.id
     );
 
+    let category = null;
+    if (row.category_id) {
+      const cat = await db
+        .selectFrom("timer_category")
+        .selectAll()
+        .where("id", "=", row.category_id)
+        .executeTakeFirst();
+      if (cat) {
+        category = {
+          id: cat.id,
+          user_id: cat.user_id,
+          name: cat.name,
+          color: cat.color,
+          sort_order: cat.sort_order,
+        };
+      }
+    }
+
     return NextResponse.json({
       data: {
         ...row,
+        category,
         total_timer_session_time: totalTime,
         timer_session_in_progress,
       },

@@ -19,4 +19,9 @@ export interface UpdateTimerRequest {
   is_archived?: boolean;
   /** @minLength 1 */
   timer_type?: string;
+  /**
+   * Timer category ID or null to clear
+   * @nullable
+   */
+  category_id?: string | null;
 }

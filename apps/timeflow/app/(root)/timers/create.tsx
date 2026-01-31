@@ -45,6 +45,7 @@ export default function CreateTimerScreen() {
       timer_type: data.timer_type,
       name: data.name,
     };
+    if (data.category_id != null && data.category_id !== "") payload.category_id = data.category_id;
     if (data.color != null && data.color !== "") payload.color = data.color;
     if (typeof data.sort_order === "number") payload.sort_order = data.sort_order;
     if (data.min_time_minutes != null && data.min_time_minutes > 0) {

@@ -98,12 +98,13 @@ export function Timer({
   }, [isRunning]);
 
   async function handleStart() {
-    if (isBusy) return;
+    const timerId = timer.id;
+    if (isBusy || timerId == null || timerId === "") return;
     try {
       const res = await createMutation.mutateAsync({
         data: {
-          timer_id: timer.id,
-          started_at: now().toISO(),
+          timer_id: timerId,
+          started_at: now().toISO() ?? undefined,
         },
       });
       if (res.status === 201) {
@@ -116,11 +117,12 @@ export function Timer({
   }
 
   async function handlePause() {
-    if (isBusy || !sessionId) return;
+    const sid = sessionId;
+    if (isBusy || sid == null || sid === "") return;
     try {
       await patchMutation.mutateAsync({
-        id: sessionId,
-        data: { ended_at: now().toISO() },
+        id: sid,
+        data: { ended_at: now().toISO()! },
       });
       await queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
       onPause?.();
@@ -134,7 +136,11 @@ export function Timer({
   }
 
   const iconName = TIMER_TYPE_ICONS[timer.timer_type] || TIMER_TYPE_ICONS.other;
-  const borderColor = timer.color ?? "#6B7280";
+  const accentColor = timer.color ?? (timer.category?.color ?? "#6B7280");
+  const cardBgColor =
+    timer.category?.color != null && timer.category.color !== ""
+      ? `${timer.category.color}ED`
+      : undefined;
 
   function handleCardPress() {
     router.push(`/(root)/timers/${timer.id}`);
@@ -143,12 +149,16 @@ export function Timer({
   return (
     <TouchableOpacity
       onPress={handleCardPress}
-      className="bg-tf-bg-secondary rounded-xl p-4 flex-row items-center"
-      style={{ borderWidth: 2, borderColor }}
+      className={`rounded-xl p-4 flex-row items-center ${cardBgColor == null ? "bg-tf-bg-secondary" : ""}`}
+      style={{
+        borderWidth: 2,
+        borderColor: accentColor,
+        ...(cardBgColor != null ? { backgroundColor: cardBgColor } : {}),
+      }}
       activeOpacity={0.7}
     >
       <View className="mr-4">
-        <Ionicons name={iconName} size={32} color={borderColor} />
+        <Ionicons name={iconName} size={32} color={accentColor} />
       </View>
 
       <View className="flex-1 items-center">
@@ -161,7 +171,7 @@ export function Timer({
               className="h-full rounded-full"
               style={{
                 width: `${Math.min(100, (time / timer.min_time) * 100)}%`,
-                backgroundColor: borderColor,
+                backgroundColor: accentColor,
               }}
             />
           </View>

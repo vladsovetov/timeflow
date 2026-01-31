@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
+import { TimerCategorySchema } from "./timer-category.js";
 
 extendZodWithOpenApi(z);
 
@@ -15,6 +16,8 @@ export const TimerSchema = z
     id: z.string().uuid().openapi({ example: "550e8400-e29b-41d4-a716-446655440000" }),
     user_id: z.string().uuid().openapi({ example: "550e8400-e29b-41d4-a716-446655440001" }),
     timer_type: z.string().openapi({ example: "work" }),
+    category_id: z.string().uuid().nullable().openapi({ example: "550e8400-e29b-41d4-a716-446655440002" }),
+    category: TimerCategorySchema.nullable().openapi({ description: "The timer's category (Useful, Important, Procrastination, or custom)" }),
     name: z.string().openapi({ example: "Deep work" }),
     color: z.string().nullable().openapi({ example: "#3b82f6" }),
     sort_order: z.number().openapi({ example: 0 }),
@@ -47,6 +50,7 @@ export const TimerResponseSchema = z
 export const CreateTimerRequestSchema = z
   .object({
     timer_type: z.string().min(1).openapi({ example: "work" }),
+    category_id: z.string().uuid().optional().openapi({ example: "550e8400-e29b-41d4-a716-446655440002", description: "Timer category ID (Useful, Important, Procrastination, or custom)" }),
     name: z.string().min(1).openapi({ example: "Deep work" }),
     color: z.string().optional().openapi({ example: "#3b82f6" }),
     sort_order: z.number().optional().openapi({ example: 0 }),
@@ -63,6 +67,7 @@ export const UpdateTimerRequestSchema = z
     min_time: z.number().nullable().optional().openapi({ example: 300, description: "Minimum session duration in seconds" }),
     is_archived: z.boolean().optional().openapi({ example: false }),
     timer_type: z.string().min(1).optional().openapi({ example: "focus" }),
+    category_id: z.string().uuid().nullable().optional().openapi({ description: "Timer category ID or null to clear" }),
   })
   .openapi("UpdateTimerRequest");
 

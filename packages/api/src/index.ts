@@ -20,6 +20,14 @@ export {
   type UpdateTimerRequest,
 } from "./schemas/timer.js";
 export {
+  TimerCategorySchema,
+  TimerCategoryListResponseSchema,
+  CreateTimerCategoryRequestSchema,
+  type TimerCategory,
+  type TimerCategoryListResponse,
+  type CreateTimerCategoryRequest,
+} from "./schemas/timer-category.js";
+export {
   TimerSessionSchema,
   TimerSessionResponseSchema,
   CreateTimerSessionRequestSchema,

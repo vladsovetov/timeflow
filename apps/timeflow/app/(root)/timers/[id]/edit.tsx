@@ -29,6 +29,7 @@ export default function EditTimerScreen() {
     if (timer) {
       form.reset({
         timer_type: timer.timer_type,
+        category_id: timer.category_id ?? undefined,
         name: timer.name,
         color: timer.color ?? undefined,
         sort_order: timer.sort_order,
@@ -100,6 +101,7 @@ export default function EditTimerScreen() {
     if (!id) return;
     const payload: UpdateTimerRequest = {
       timer_type: data.timer_type,
+      category_id: data.category_id ?? undefined,
       name: data.name,
       color: data.color ?? undefined,
       sort_order: data.sort_order,

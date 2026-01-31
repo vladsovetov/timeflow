@@ -13,15 +13,16 @@ import { Button } from "@/src/components/Button/Button";
 import * as SecureStore from "expo-secure-store";
 
 const COLOR_PICKER_STORAGE_KEY = "selected_color_temp";
+const CATEGORY_COLOR_STORAGE_KEY = "selected_category_color_temp";
 
 export default function ColorPickerScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ color?: string }>();
+  const params = useLocalSearchParams<{ color?: string; forCategory?: string }>();
+  const storageKey = params.forCategory === "1" ? CATEGORY_COLOR_STORAGE_KEY : COLOR_PICKER_STORAGE_KEY;
   const [selectedColor, setSelectedColor] = useState(params.color || "#3b82f6");
 
   const handleApply = async () => {
-    // Store the selected color temporarily
-    await SecureStore.setItemAsync(COLOR_PICKER_STORAGE_KEY, selectedColor);
+    await SecureStore.setItemAsync(storageKey, selectedColor);
     router.back();
   };
 

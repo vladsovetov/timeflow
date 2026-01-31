@@ -25,12 +25,15 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CreateTimerCategoryRequest,
   CreateTimerRequest,
   CreateTimerSessionRequest,
   ErrorResponse,
   GetApiV1ExampleDb200,
   GetApiV1TimersIdStatsParams,
   MeResponse,
+  PostApiV1TimerCategories201,
+  TimerCategoryListResponse,
   TimerListResponse,
   TimerResponse,
   TimerSessionListResponse,
@@ -270,6 +273,224 @@ export const usePatchApiV1Me = <TError = ErrorResponse,
       > => {
 
       const mutationOptions = getPatchApiV1MeMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * List system categories (Useful, Important, Procrastination) and user's custom categories
+ * @summary List timer categories
+ */
+export type getApiV1TimerCategoriesResponse200 = {
+  data: TimerCategoryListResponse
+  status: 200
+}
+
+export type getApiV1TimerCategoriesResponse401 = {
+  data: ErrorResponse
+  status: 401
+}
+    
+export type getApiV1TimerCategoriesResponseSuccess = (getApiV1TimerCategoriesResponse200) & {
+  headers: Headers;
+};
+export type getApiV1TimerCategoriesResponseError = (getApiV1TimerCategoriesResponse401) & {
+  headers: Headers;
+};
+
+export type getApiV1TimerCategoriesResponse = (getApiV1TimerCategoriesResponseSuccess | getApiV1TimerCategoriesResponseError)
+
+export const getGetApiV1TimerCategoriesUrl = () => {
+
+
+  
+
+  return `/api/v1/timer-categories`
+}
+
+export const getApiV1TimerCategories = async ( options?: RequestInit): Promise<getApiV1TimerCategoriesResponse> => {
+  
+  return customFetch<getApiV1TimerCategoriesResponse>(getGetApiV1TimerCategoriesUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+
+
+export const getGetApiV1TimerCategoriesQueryKey = () => {
+    return [
+    `/api/v1/timer-categories`
+    ] as const;
+    }
+
+    
+export const getGetApiV1TimerCategoriesQueryOptions = <TData = Awaited<ReturnType<typeof getApiV1TimerCategories>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1TimerCategories>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetApiV1TimerCategoriesQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiV1TimerCategories>>> = ({ signal }) => getApiV1TimerCategories({ signal, ...requestOptions });
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiV1TimerCategories>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetApiV1TimerCategoriesQueryResult = NonNullable<Awaited<ReturnType<typeof getApiV1TimerCategories>>>
+export type GetApiV1TimerCategoriesQueryError = ErrorResponse
+
+
+export function useGetApiV1TimerCategories<TData = Awaited<ReturnType<typeof getApiV1TimerCategories>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1TimerCategories>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getApiV1TimerCategories>>,
+          TError,
+          Awaited<ReturnType<typeof getApiV1TimerCategories>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetApiV1TimerCategories<TData = Awaited<ReturnType<typeof getApiV1TimerCategories>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1TimerCategories>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getApiV1TimerCategories>>,
+          TError,
+          Awaited<ReturnType<typeof getApiV1TimerCategories>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetApiV1TimerCategories<TData = Awaited<ReturnType<typeof getApiV1TimerCategories>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1TimerCategories>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List timer categories
+ */
+
+export function useGetApiV1TimerCategories<TData = Awaited<ReturnType<typeof getApiV1TimerCategories>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1TimerCategories>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetApiV1TimerCategoriesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+
+/**
+ * Create a custom timer category for the current user
+ * @summary Create custom timer category
+ */
+export type postApiV1TimerCategoriesResponse201 = {
+  data: PostApiV1TimerCategories201
+  status: 201
+}
+
+export type postApiV1TimerCategoriesResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postApiV1TimerCategoriesResponse401 = {
+  data: ErrorResponse
+  status: 401
+}
+    
+export type postApiV1TimerCategoriesResponseSuccess = (postApiV1TimerCategoriesResponse201) & {
+  headers: Headers;
+};
+export type postApiV1TimerCategoriesResponseError = (postApiV1TimerCategoriesResponse400 | postApiV1TimerCategoriesResponse401) & {
+  headers: Headers;
+};
+
+export type postApiV1TimerCategoriesResponse = (postApiV1TimerCategoriesResponseSuccess | postApiV1TimerCategoriesResponseError)
+
+export const getPostApiV1TimerCategoriesUrl = () => {
+
+
+  
+
+  return `/api/v1/timer-categories`
+}
+
+export const postApiV1TimerCategories = async (createTimerCategoryRequest: CreateTimerCategoryRequest, options?: RequestInit): Promise<postApiV1TimerCategoriesResponse> => {
+  
+  return customFetch<postApiV1TimerCategoriesResponse>(getPostApiV1TimerCategoriesUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createTimerCategoryRequest,)
+  }
+);}
+
+
+
+
+export const getPostApiV1TimerCategoriesMutationOptions = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiV1TimerCategories>>, TError,{data: CreateTimerCategoryRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof postApiV1TimerCategories>>, TError,{data: CreateTimerCategoryRequest}, TContext> => {
+
+const mutationKey = ['postApiV1TimerCategories'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postApiV1TimerCategories>>, {data: CreateTimerCategoryRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  postApiV1TimerCategories(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostApiV1TimerCategoriesMutationResult = NonNullable<Awaited<ReturnType<typeof postApiV1TimerCategories>>>
+    export type PostApiV1TimerCategoriesMutationBody = CreateTimerCategoryRequest
+    export type PostApiV1TimerCategoriesMutationError = ErrorResponse
+
+    /**
+ * @summary Create custom timer category
+ */
+export const usePostApiV1TimerCategories = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postApiV1TimerCategories>>, TError,{data: CreateTimerCategoryRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof postApiV1TimerCategories>>,
+        TError,
+        {data: CreateTimerCategoryRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getPostApiV1TimerCategoriesMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
