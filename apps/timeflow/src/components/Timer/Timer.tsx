@@ -179,35 +179,30 @@ export function Timer({
       </View>
 
       <View className="ml-2 flex-row items-center gap-2">
-        {/* <TouchableOpacity
-          onPress={handleNavigateToSessions}
-          className="w-10 h-10 items-center justify-center"
-        >
-          <Ionicons name="time-outline" size={24} color={borderColor} />
-        </TouchableOpacity> */}
-        
         {isRunning ? (
           <TouchableOpacity
             onPress={handlePause}
             disabled={isBusy}
-            className="w-12 h-12 rounded-full bg-tf-error items-center justify-center"
+            className="w-14 h-14 rounded-full items-center justify-center"
+            style={{ backgroundColor: accentColor }}
           >
             {isPatching ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
-              <Ionicons name="pause" size={24} color="#ffffff" />
+              <Ionicons name="pause" size={30} color="#ffffff" />
             )}
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
             onPress={handleStart}
             disabled={isBusy}
-            className="w-12 h-12 rounded-full bg-tf-success items-center justify-center"
+            className="w-14 h-14 rounded-full items-center justify-center"
+            style={{ backgroundColor: accentColor }}
           >
             {isCreating ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
-              <Ionicons name="play" size={24} color="#ffffff" />
+              <Ionicons name="play" size={30} color="#ffffff" />
             )}
           </TouchableOpacity>
         )}
