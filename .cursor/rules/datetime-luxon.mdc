@@ -1,0 +1,39 @@
+---
+description: Use Luxon DateTime for all date/time logic instead of native Date
+alwaysApply: true
+---
+
+# Date/time: Luxon DateTime
+
+Always use **Luxon** (`luxon`) `DateTime` for date and time logic instead of the native JavaScript `Date` object.
+
+## Rules
+
+- Use `DateTime` from `luxon` for parsing, formatting, comparison, and arithmetic.
+- Use the app’s `parseDateTime(isoString, zone)` and `now(zone)` from `@/src/lib/date` when working in the user’s timezone.
+- Use `DateTime.fromISO()`, `DateTime.now()`, `.toMillis()`, `.toISO()`, `.toFormat()`, etc. instead of `new Date()`, `Date.now()`, or `.getTime()`.
+- When a third-party API (e.g. a date picker) requires a native `Date`, convert at the boundary with `dateTime.toJSDate()`.
+
+## Examples
+
+```ts
+// Parsing and formatting (prefer app helpers when zone matters)
+import { DateTime } from "luxon";
+import { parseDateTime, now } from "@/src/lib/date";
+
+const dt = parseDateTime(isoString, zone);
+const formatted = dt.toFormat("HH:mm");
+
+// Sorting by time
+items.sort((a, b) =>
+  DateTime.fromISO(a.started_at).toMillis() - DateTime.fromISO(b.started_at).toMillis()
+);
+
+// Timestamp for IDs
+const id = `prefix-${DateTime.now().toMillis()}`;
+
+// Passing to a component that expects native Date
+<DatePicker date={dateTime.toJSDate()} />
+```
+
+Do not use `new Date()`, `Date.now()`, or `date.getTime()` in application code; use Luxon instead.

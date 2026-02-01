@@ -2,6 +2,7 @@ import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity } from "rea
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   useGetApiV1TimerSessionsId,
+  useGetApiV1TimerSessions,
   usePatchApiV1TimerSessionsId,
   getGetApiV1TimerSessionsQueryKey,
   getGetApiV1TimerSessionsIdQueryKey,
@@ -58,6 +59,26 @@ export default function EditSessionScreen() {
 
   const { data, isLoading, error } = useGetApiV1TimerSessionsId(sessionId ?? "");
   const session = data?.status === 200 ? data.data.data : null;
+
+  const { data: sessionsListData } = useGetApiV1TimerSessions({
+    query: { enabled: !!id && !!session },
+  });
+  const allSessions = sessionsListData?.status === 200 ? sessionsListData.data.data : [];
+  const timerSessions = allSessions
+    .filter((s) => s.timer_id === id)
+    .sort(
+      (a, b) =>
+        DateTime.fromISO(a.started_at).toMillis() -
+        DateTime.fromISO(b.started_at).toMillis()
+    );
+  const currentIndex = session
+    ? timerSessions.findIndex((s) => s.id === session.id)
+    : -1;
+  const previousSession = currentIndex > 0 ? timerSessions[currentIndex - 1] : null;
+  const nextSession =
+    currentIndex >= 0 && currentIndex < timerSessions.length - 1
+      ? timerSessions[currentIndex + 1]
+      : null;
 
   const [pickerMode, setPickerMode] = useState<"start" | "end" | null>(null);
 
@@ -160,7 +181,7 @@ export default function EditSessionScreen() {
       ? startDateTime?.toJSDate()
       : pickerMode === "end"
         ? (endDateTime ?? startDateTime)?.toJSDate()
-        : new Date();
+        : DateTime.now().toJSDate();
 
   return (
     <View className="flex-1 bg-tf-bg-primary">
@@ -194,6 +215,47 @@ export default function EditSessionScreen() {
         {errors.ended_at ? (
           <Text className="text-tf-error text-sm mb-4">{errors.ended_at.message}</Text>
         ) : null}
+        {(previousSession ?? nextSession) ? (
+          <View className="mb-6 rounded-xl bg-tf-input-bg border border-tf-input-border p-4">
+            <Text className="text-tf-text-secondary text-xs mb-3">
+              Time bounds (from adjacent sessions)
+            </Text>
+            {previousSession ? (
+              <View className="mb-2">
+                <Text className="text-tf-text-primary text-sm">
+                  Previous session:{" "}
+                  {parseDateTime(previousSession.started_at, zone).toFormat("HH:mm")}
+                  {" – "}
+                  {previousSession.ended_at
+                    ? parseDateTime(previousSession.ended_at, zone).toFormat("HH:mm")
+                    : "…"}
+                </Text>
+                <Text className="text-tf-text-secondary text-xs mt-0.5">
+                  Start time cannot be before{" "}
+                  {previousSession.ended_at
+                    ? parseDateTime(previousSession.ended_at, zone).toFormat("HH:mm")
+                    : "previous end"}
+                </Text>
+              </View>
+            ) : null}
+            {nextSession ? (
+              <View>
+                <Text className="text-tf-text-primary text-sm">
+                  Next session:{" "}
+                  {parseDateTime(nextSession.started_at, zone).toFormat("HH:mm")}
+                  {" – "}
+                  {nextSession.ended_at
+                    ? parseDateTime(nextSession.ended_at, zone).toFormat("HH:mm")
+                    : "…"}
+                </Text>
+                <Text className="text-tf-text-secondary text-xs mt-0.5">
+                  End time cannot be after{" "}
+                  {parseDateTime(nextSession.started_at, zone).toFormat("HH:mm")}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
         <Button
           variant="primary"
           onPress={handleSubmit(onSubmit)}
@@ -205,7 +267,7 @@ export default function EditSessionScreen() {
       <DateTimePickerModal
         isVisible={pickerMode !== null}
         mode="time"
-        date={pickerDate ?? new Date()}
+        date={pickerDate ?? DateTime.now().toJSDate()}
         onConfirm={onPickerConfirm}
         onCancel={() => setPickerMode(null)}
       />

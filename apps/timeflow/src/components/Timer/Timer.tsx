@@ -133,7 +133,7 @@ export function Timer({
     if (timerId == null || timerId === "") return;
 
     const startedAt = now(zone).toISO() ?? "";
-    const tempId = `${TEMP_SESSION_PREFIX}${Date.now()}`;
+    const tempId = `${TEMP_SESSION_PREFIX}${now(zone).toMillis()}`;
 
     if (timersQueryKey) {
       updateTimersCache((timers) =>

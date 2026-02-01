@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PQueue from "p-queue";
+import { DateTime } from "luxon";
 
 const STORAGE_KEY = "timeflow_sync_queue";
 
@@ -14,7 +15,7 @@ type Executor<T = unknown> = (payload: T) => Promise<void>;
 const executors = new Map<string, Executor>();
 
 function generateId(): string {
-  return `sync-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  return `sync-${DateTime.now().toMillis()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
 async function loadOps(): Promise<SyncOp[]> {
