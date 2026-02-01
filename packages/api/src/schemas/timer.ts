@@ -71,8 +71,18 @@ export const UpdateTimerRequestSchema = z
   })
   .openapi("UpdateTimerRequest");
 
+export const ReorderTimersRequestSchema = z
+  .object({
+    timer_ids: z
+      .array(z.string().uuid())
+      .min(1)
+      .openapi({ description: "Timer IDs in desired order; index 0 = sort_order 0" }),
+  })
+  .openapi("ReorderTimersRequest");
+
 export type Timer = z.infer<typeof TimerSchema>;
 export type TimerListResponse = z.infer<typeof TimerListResponseSchema>;
 export type TimerResponse = z.infer<typeof TimerResponseSchema>;
 export type CreateTimerRequest = z.infer<typeof CreateTimerRequestSchema>;
 export type UpdateTimerRequest = z.infer<typeof UpdateTimerRequestSchema>;
+export type ReorderTimersRequest = z.infer<typeof ReorderTimersRequestSchema>;

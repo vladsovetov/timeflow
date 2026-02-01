@@ -12,6 +12,7 @@ import {
   TimerResponseSchema,
   CreateTimerRequestSchema,
   UpdateTimerRequestSchema,
+  ReorderTimersRequestSchema,
   TimerSessionInProgressSchema,
 } from "./schemas/timer.js";
 import {
@@ -45,6 +46,7 @@ registry.register("TimerListResponse", TimerListResponseSchema);
 registry.register("TimerResponse", TimerResponseSchema);
 registry.register("CreateTimerRequest", CreateTimerRequestSchema);
 registry.register("UpdateTimerRequest", UpdateTimerRequestSchema);
+registry.register("ReorderTimersRequest", ReorderTimersRequestSchema);
 registry.register("TimerCategory", TimerCategorySchema);
 registry.register("TimerCategoryListResponse", TimerCategoryListResponseSchema);
 registry.register("CreateTimerCategoryRequest", CreateTimerCategoryRequestSchema);
@@ -410,6 +412,45 @@ registry.registerPath({
     },
     409: {
       description: "Conflict - timer with this name already exists",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/api/v1/timers/reorder",
+  summary: "Reorder timers",
+  description: "Update sort_order for all timers in a single request. Order of timer_ids array = sort_order (index 0 → 0, index 1 → 1, etc.)",
+  tags: ["Timer"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: ReorderTimersRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Timers reordered successfully",
+    },
+    400: {
+      description: "Bad request - invalid or unauthorized timer IDs",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Unauthorized",
       content: {
         "application/json": {
           schema: ErrorResponseSchema,

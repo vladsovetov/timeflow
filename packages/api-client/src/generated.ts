@@ -33,6 +33,7 @@ import type {
   GetApiV1TimersIdStatsParams,
   MeResponse,
   PostApiV1TimerCategories201,
+  ReorderTimersRequest,
   TimerCategoryListResponse,
   TimerListResponse,
   TimerResponse,
@@ -1158,6 +1159,103 @@ export const useDeleteApiV1TimersId = <TError = ErrorResponse,
       > => {
 
       const mutationOptions = getDeleteApiV1TimersIdMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    
+/**
+ * Update sort_order for all timers in a single request. Order of timer_ids array = sort_order (index 0 → 0, index 1 → 1, etc.)
+ * @summary Reorder timers
+ */
+export type patchApiV1TimersReorderResponse200 = {
+  data: void
+  status: 200
+}
+
+export type patchApiV1TimersReorderResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type patchApiV1TimersReorderResponse401 = {
+  data: ErrorResponse
+  status: 401
+}
+    
+export type patchApiV1TimersReorderResponseSuccess = (patchApiV1TimersReorderResponse200) & {
+  headers: Headers;
+};
+export type patchApiV1TimersReorderResponseError = (patchApiV1TimersReorderResponse400 | patchApiV1TimersReorderResponse401) & {
+  headers: Headers;
+};
+
+export type patchApiV1TimersReorderResponse = (patchApiV1TimersReorderResponseSuccess | patchApiV1TimersReorderResponseError)
+
+export const getPatchApiV1TimersReorderUrl = () => {
+
+
+  
+
+  return `/api/v1/timers/reorder`
+}
+
+export const patchApiV1TimersReorder = async (reorderTimersRequest: ReorderTimersRequest, options?: RequestInit): Promise<patchApiV1TimersReorderResponse> => {
+  
+  return customFetch<patchApiV1TimersReorderResponse>(getPatchApiV1TimersReorderUrl(),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reorderTimersRequest,)
+  }
+);}
+
+
+
+
+export const getPatchApiV1TimersReorderMutationOptions = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchApiV1TimersReorder>>, TError,{data: ReorderTimersRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof patchApiV1TimersReorder>>, TError,{data: ReorderTimersRequest}, TContext> => {
+
+const mutationKey = ['patchApiV1TimersReorder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof patchApiV1TimersReorder>>, {data: ReorderTimersRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  patchApiV1TimersReorder(data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PatchApiV1TimersReorderMutationResult = NonNullable<Awaited<ReturnType<typeof patchApiV1TimersReorder>>>
+    export type PatchApiV1TimersReorderMutationBody = ReorderTimersRequest
+    export type PatchApiV1TimersReorderMutationError = ErrorResponse
+
+    /**
+ * @summary Reorder timers
+ */
+export const usePatchApiV1TimersReorder = <TError = ErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchApiV1TimersReorder>>, TError,{data: ReorderTimersRequest}, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof patchApiV1TimersReorder>>,
+        TError,
+        {data: ReorderTimersRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getPatchApiV1TimersReorderMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

@@ -13,11 +13,13 @@ export {
   TimerResponseSchema,
   CreateTimerRequestSchema,
   UpdateTimerRequestSchema,
+  ReorderTimersRequestSchema,
   type Timer,
   type TimerListResponse,
   type TimerResponse,
   type CreateTimerRequest,
   type UpdateTimerRequest,
+  type ReorderTimersRequest,
 } from "./schemas/timer.js";
 export {
   TimerCategorySchema,

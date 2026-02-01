@@ -14,6 +14,7 @@ export * from './createTimerSessionRequest';
 export * from './getApiV1ExampleDb200';
 export * from './getApiV1TimersIdStatsParams';
 export * from './postApiV1TimerCategories201';
+export * from './reorderTimersRequest';
 export * from './timer';
 export * from './timerCategory';
 export * from './timerCategoryListResponse';

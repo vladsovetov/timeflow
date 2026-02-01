@@ -1,12 +1,33 @@
-import { View, Text, FlatList, ActivityIndicator } from "react-native";
+import { useState, useEffect } from "react";
+import { View, Text, ActivityIndicator, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { useGetApiV1Timers } from "@acme/api-client";
+import { useQueryClient } from "@tanstack/react-query";
+import DraggableFlatList, {
+  ScaleDecorator,
+  type RenderItemParams,
+} from "react-native-draggable-flatlist";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  useGetApiV1Timers,
+  usePatchApiV1TimersReorder,
+  getGetApiV1TimersQueryKey,
+} from "@acme/api-client";
 import { Button } from "@/src/components/Button/Button";
 import { Timer } from "@/src/components/Timer/Timer";
+import type { Timer as TimerModel } from "@acme/api-client";
 
 export default function TimersScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data, isLoading, error, refetch } = useGetApiV1Timers();
+  const reorderMutation = usePatchApiV1TimersReorder();
+
+  const timersFromApi = data?.status === 200 ? data.data.data : [];
+  const [timers, setTimers] = useState<TimerModel[]>([]);
+
+  useEffect(() => {
+    setTimers(timersFromApi);
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -30,7 +51,45 @@ export default function TimersScreen() {
     );
   }
 
-  const timers = data?.status === 200 ? data.data.data : [];
+  async function handleDragEnd({ data: newData }: { data: TimerModel[] }) {
+    setTimers(newData);
+    try {
+      const res = await reorderMutation.mutateAsync({
+        data: { timer_ids: newData.map((t) => t.id) },
+      });
+      if (res.status === 200) {
+        await queryClient.invalidateQueries({
+          queryKey: getGetApiV1TimersQueryKey(),
+        });
+      }
+    } catch {
+      setTimers(timersFromApi);
+    }
+  }
+
+  function renderItem({ item, drag, isActive }: RenderItemParams<TimerModel>) {
+    return (
+      <ScaleDecorator>
+        <View className="flex-row items-center mb-3">
+          <Pressable
+            onLongPress={drag}
+            disabled={isActive}
+            className="mr-2 py-4 px-1 justify-center"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name="reorder-three"
+              size={24}
+              color="#6B7280"
+            />
+          </Pressable>
+          <View className="flex-1">
+            <Timer timer={item} onStart={() => {}} onPause={() => {}} />
+          </View>
+        </View>
+      </ScaleDecorator>
+    );
+  }
 
   return (
     <View className="flex-1 bg-tf-bg-primary">
@@ -53,20 +112,13 @@ export default function TimersScreen() {
           </Button>
         </View>
       ) : (
-        <>
-          <FlatList
+        <View className="flex-1 justify-between">
+          <DraggableFlatList
             data={timers}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item: TimerModel) => item.id}
+            onDragEnd={handleDragEnd}
+            renderItem={renderItem}
             contentContainerStyle={{ padding: 24, paddingTop: 8 }}
-            renderItem={({ item }) => (
-              <View className="mb-3">
-                <Timer
-                  timer={item}
-                  onStart={() => {}}
-                  onPause={() => {}}
-                />
-              </View>
-            )}
           />
           <View className="px-6 pb-6">
             <Button
@@ -77,7 +129,7 @@ export default function TimersScreen() {
               Create Timer
             </Button>
           </View>
-        </>
+        </View>
       )}
     </View>
   );
