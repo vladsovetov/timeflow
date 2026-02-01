@@ -128,12 +128,37 @@ export async function POST(request: Request) {
   const noteVal = typeof note === "string" ? note.trim() || null : null;
 
   try {
-    const result = await sql`
-      INSERT INTO timer_session (user_id, timer_id, started_at, ended_at, source, note, updated_by)
-      VALUES (${user.id}, ${timer_id}, ${startedAtDate}, ${endedAtDate}, ${sourceVal}, ${noteVal}, ${user.id})
-      RETURNING *
-    `.execute(db);
-    const row = result.rows[0];
+    const row = await db.transaction().execute(async (trx) => {
+      // Only one timer can run at a time: end any other currently running session for this user
+      const otherRunning = await trx
+        .selectFrom("timer_session")
+        .select("id")
+        .where("user_id", "=", user.id)
+        .where("is_deleted", "=", false)
+        .where("ended_at", "is", null)
+        .execute();
+
+      for (const session of otherRunning) {
+        await trx
+          .updateTable("timer_session")
+          .set({
+            ended_at: startedAtDate,
+            updated_at: new Date(),
+            updated_by: user.id,
+          })
+          .where("id", "=", session.id)
+          .where("user_id", "=", user.id)
+          .execute();
+      }
+
+      const result = await sql`
+        INSERT INTO timer_session (user_id, timer_id, started_at, ended_at, source, note, updated_by)
+        VALUES (${user.id}, ${timer_id}, ${startedAtDate}, ${endedAtDate}, ${sourceVal}, ${noteVal}, ${user.id})
+        RETURNING *
+      `.execute(trx);
+      return result.rows[0];
+    });
+
     if (!row) {
       return NextResponse.json(
         { error: "Failed to create timer session" } satisfies ErrorResponse,
