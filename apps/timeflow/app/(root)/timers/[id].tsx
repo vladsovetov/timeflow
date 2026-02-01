@@ -283,6 +283,7 @@ export default function TimerDetailsScreen() {
                     <View className="flex-row items-center justify-between mb-2">
                       <View className="flex-1">
                         <SessionTimeDisplay
+                          label="Started"
                           currentIso={session.started_at}
                           originalIso={session.original_started_at}
                           formatDateFn={(iso) => formatDate(iso, zone)}
@@ -301,6 +302,7 @@ export default function TimerDetailsScreen() {
                       {session.ended_at && (
                         <View>
                           <SessionTimeDisplay
+                            label="Ended"
                             currentIso={session.ended_at}
                             originalIso={session.original_ended_at}
                             formatDateFn={(iso) => formatDate(iso, zone)}
