@@ -16,6 +16,7 @@ import { DateTime } from "luxon";
 import { useUserTimezone } from "@/src/contexts/AppContext";
 import { parseDateTime, now } from "@/src/lib/date";
 import { SessionTimeDisplay } from "@/src/components/SessionTimeDisplay/SessionTimeDisplay";
+import { DurationDisplay } from "@/src/components/DurationDisplay/DurationDisplay";
 
 const TIMER_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   work: "briefcase",
@@ -30,20 +31,6 @@ const TIMER_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   sleep: "moon",
   other: "ellipsis-horizontal",
 };
-
-function formatTime(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${secs}s`;
-  }
-  if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  }
-  return `${secs}s`;
-}
 
 function formatDate(dateString: string, zone: string): string {
   const date = parseDateTime(dateString, zone);
@@ -299,9 +286,10 @@ export default function TimerDetailsScreen() {
                       )}
                     </View>
                     <View className="flex-row items-center justify-between">
-                      <Text className="text-tf-text-secondary text-sm">
-                        Duration: {formatTime(duration)}
-                      </Text>
+                      <View className="flex-row items-center gap-2">
+                        <Text className="text-tf-text-secondary text-sm">Duration:</Text>
+                        <DurationDisplay seconds={duration} size="sm" />
+                      </View>
                       {session.ended_at && (
                         <View>
                           <SessionTimeDisplay

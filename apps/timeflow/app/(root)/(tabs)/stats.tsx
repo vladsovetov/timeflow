@@ -32,17 +32,10 @@ import { useTranslation } from "@/src/i18n";
 import { getCategoryDisplayName } from "@/src/lib/category";
 import { parseDateTime, now } from "@/src/lib/date";
 import { DateNavigator } from "@/src/components/DateNavigator/DateNavigator";
+import { DurationDisplay } from "@/src/components/DurationDisplay/DurationDisplay";
 
 const SWIPE_THRESHOLD = 60;
 const SECONDS_PER_DAY = 24 * 60 * 60;
-
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m`;
-  return `${seconds}s`;
-}
 
 function sessionOverlapsDay(
   session: TimerSession,
@@ -431,12 +424,14 @@ export default function StatsScreen() {
               <Text className="text-lg font-semibold text-tf-text-primary mb-2">
                 {t("awakeTime")}
               </Text>
-              <Text className="text-2xl font-bold text-tf-text-primary">
-                {formatDuration(awakeSeconds)}
-              </Text>
-              <Text className="text-sm text-tf-text-secondary mt-1">
-                {t("awakeTimeSubtitle")} ({formatDuration(sleepSeconds)})
-              </Text>
+              <DurationDisplay seconds={awakeSeconds} size="lg" />
+              <View className="flex-row flex-wrap items-baseline gap-x-1 mt-1">
+                <Text className="text-sm text-tf-text-secondary">
+                  {t("awakeTimeSubtitle")} (
+                </Text>
+                <DurationDisplay seconds={sleepSeconds} size="sm" />
+                <Text className="text-sm text-tf-text-secondary">)</Text>
+              </View>
             </View>
 
             <View className="bg-tf-bg-secondary rounded-xl p-4 mb-4">
@@ -566,10 +561,12 @@ export default function StatsScreen() {
                     textColor="#C7C9E3"
                     textSize={12}
                   />
-                  <Text className="text-tf-text-secondary text-sm mt-2">
-                    {formatDuration(Math.round(nonSleepSessionSeconds))} {t("of")}{" "}
-                    {formatDuration(awakeSeconds)} {t("awake")}
-                  </Text>
+                  <View className="flex-row flex-wrap items-center gap-x-1 mt-2">
+                    <DurationDisplay seconds={Math.round(nonSleepSessionSeconds)} size="sm" />
+                    <Text className="text-tf-text-secondary text-sm">{t("of")}</Text>
+                    <DurationDisplay seconds={awakeSeconds} size="sm" />
+                    <Text className="text-tf-text-secondary text-sm">{t("awake")}</Text>
+                  </View>
                   <View className="mt-4 w-full">
                     {pieData.map((slice, idx) => (
                       <View

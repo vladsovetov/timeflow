@@ -17,20 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useUserTimezone } from "@/src/contexts/AppContext";
 import { parseDateTime, now } from "@/src/lib/date";
 import { SessionTimeDisplay } from "@/src/components/SessionTimeDisplay/SessionTimeDisplay";
-
-function formatTime(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${secs}s`;
-  }
-  if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  }
-  return `${secs}s`;
-}
+import { DurationDisplay } from "@/src/components/DurationDisplay/DurationDisplay";
 
 function formatDate(dateString: string, zone: string): string {
   const date = parseDateTime(dateString, zone);
@@ -205,9 +192,7 @@ export default function SessionDetailsScreen() {
               </View>
             )}
             <Text className="text-tf-text-secondary text-sm mb-1">Duration</Text>
-            <Text className="text-tf-text-primary text-base">
-              {formatTime(duration)}
-            </Text>
+            <DurationDisplay seconds={duration} />
             {session.note ? (
               <>
                 <Text className="text-tf-text-secondary text-sm mt-3 mb-1">Note</Text>

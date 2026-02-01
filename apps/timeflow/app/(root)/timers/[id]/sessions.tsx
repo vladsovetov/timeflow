@@ -6,20 +6,7 @@ import { useGetApiV1TimerSessions, useGetApiV1TimersId } from "@acme/api-client"
 import { useUserTimezone } from "@/src/contexts/AppContext";
 import { parseDateTime, now } from "@/src/lib/date";
 import { SessionTimeDisplay } from "@/src/components/SessionTimeDisplay/SessionTimeDisplay";
-
-function formatTime(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${secs}s`;
-  }
-  if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  }
-  return `${secs}s`;
-}
+import { DurationDisplay } from "@/src/components/DurationDisplay/DurationDisplay";
 
 function formatDate(dateString: string, zone: string): string {
   const date = parseDateTime(dateString, zone);
@@ -150,9 +137,10 @@ export default function TimerSessionsScreen() {
                   )}
                 </View>
                 <View className="flex-row items-center justify-between">
-                  <Text className="text-tf-text-secondary text-sm">
-                    Duration: {formatTime(duration)}
-                  </Text>
+                  <View className="flex-row items-center gap-2">
+                  <Text className="text-tf-text-secondary text-sm">Duration:</Text>
+                  <DurationDisplay seconds={duration} size="sm" />
+                </View>
                   {item.ended_at && (
                     <View>
                       <SessionTimeDisplay

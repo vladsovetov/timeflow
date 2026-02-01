@@ -15,6 +15,7 @@ import { useTranslation } from "@/src/i18n";
 import { getCategoryDisplayName } from "@/src/lib/category";
 import { parseDateTime, now } from "@/src/lib/date";
 import { syncQueueTimerSessions } from "@/src/lib/sync-queue-timer-sessions";
+import { DurationDisplay } from "@/src/components/DurationDisplay/DurationDisplay";
 
 const TIMER_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   work: "briefcase",
@@ -41,17 +42,6 @@ interface TimerProps {
   timersQueryKey?: readonly unknown[];
   /** When true, hide start/stop buttons (e.g. when viewing past/future days). Card remains tappable to open. */
   readOnly?: boolean;
-}
-
-function formatTime(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-
-  if (hours > 0) {
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  }
-  return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 
 function isTempSessionId(id: string | null): boolean {
@@ -301,9 +291,7 @@ export function Timer({
             </View>
           )}
         </View>
-        <Text className="text-2xl font-mono font-semibold text-tf-text-primary mt-1">
-          {formatTime(time)}
-        </Text>
+        <DurationDisplay seconds={time} size="lg" className="mt-1" />
         {timer.min_time != null && timer.min_time > 0 && (
           <View className="w-full mt-2 h-1.5 rounded-full bg-tf-bg-tertiary overflow-hidden">
             <View

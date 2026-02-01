@@ -63,3 +63,17 @@ export function formatDateLabel(
   const format = dayStart.year !== currentYear ? "d MMMM yyyy" : "d MMMM";
   return dayStart.setLocale(locale).toFormat(format);
 }
+
+/**
+ * Splits duration in seconds into HH:MM: and ss for display (seconds de-emphasized).
+ * Always uses HH:MM:ss format, e.g. 00:05:30 for 5m 30s.
+ */
+export function formatDurationParts(seconds: number): { main: string; seconds: string } {
+  const total = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  const main = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:`;
+  const secondsPart = secs.toString().padStart(2, "0");
+  return { main, seconds: secondsPart };
+}
