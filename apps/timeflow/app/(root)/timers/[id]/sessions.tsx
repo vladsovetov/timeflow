@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useGetApiV1TimerSessions, useGetApiV1TimersId } from "@acme/api-client";
 import { useUserTimezone } from "@/src/contexts/AppContext";
@@ -59,6 +60,7 @@ export default function TimerSessionsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const zone = useUserTimezone();
+  const insets = useSafeAreaInsets();
 
   const { data: timerData, isLoading: isLoadingTimer, refetch: refetchTimer } =
     useGetApiV1TimersId(id ?? "");
@@ -117,7 +119,7 @@ export default function TimerSessionsScreen() {
         <FlatList
           data={sessions}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 24, paddingTop: 8 }}
+          contentContainerStyle={{ padding: 24, paddingTop: 8, paddingBottom: 24 + insets.bottom }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
           }

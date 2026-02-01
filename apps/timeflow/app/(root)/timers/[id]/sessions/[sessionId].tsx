@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity, RefreshControl, Alert } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   useGetApiV1TimersId,
@@ -71,6 +72,7 @@ export default function SessionDetailsScreen() {
   const queryClient = useQueryClient();
   const { id, sessionId } = useLocalSearchParams<{ id: string; sessionId: string }>();
   const zone = useUserTimezone();
+  const insets = useSafeAreaInsets();
 
   const { data: timerData, isLoading: isLoadingTimer, error: timerError, refetch: refetchTimer } =
     useGetApiV1TimersId(id ?? "");
@@ -149,6 +151,7 @@ export default function SessionDetailsScreen() {
     <View className="flex-1 bg-tf-bg-primary">
       <ScrollView
         className="flex-1"
+        contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
         }

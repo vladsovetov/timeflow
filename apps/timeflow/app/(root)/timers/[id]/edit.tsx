@@ -1,4 +1,5 @@
 import { View, Text, ActivityIndicator, Alert } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import {
   useGetApiV1TimersId,
@@ -22,6 +23,7 @@ export default function EditTimerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const { data, isLoading, error } = useGetApiV1TimersId(id ?? "");
 
@@ -141,7 +143,7 @@ export default function EditTimerScreen() {
   return (
     <View className="flex-1 bg-tf-bg-primary">
       <TimerForm form={form} isUpdate={true} />
-      <View className="px-6 pb-6 flex-row gap-3">
+      <View className="px-6 flex-row gap-3" style={{ paddingBottom: 24 + insets.bottom }}>
         <Button
           variant="danger"
           onPress={handleDelete}

@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { View, Text, FlatList, ActivityIndicator, ScrollView, TouchableOpacity, Dimensions, RefreshControl } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   useGetApiV1TimersId,
@@ -98,6 +99,7 @@ export default function TimerDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const zone = useUserTimezone();
+  const insets = useSafeAreaInsets();
   
   const { data: timerData, isLoading: isLoadingTimer, error: timerError, refetch: refetchTimer } =
     useGetApiV1TimersId(id ?? "");
@@ -217,6 +219,7 @@ export default function TimerDetailsScreen() {
 
       <ScrollView
         className="flex-1"
+        contentContainerStyle={{ paddingBottom: insets.bottom }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
         }

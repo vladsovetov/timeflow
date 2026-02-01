@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScrollView } from "react-native-gesture-handler";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
@@ -18,6 +19,7 @@ const CATEGORY_COLOR_STORAGE_KEY = "selected_category_color_temp";
 export default function ColorPickerScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ color?: string; forCategory?: string }>();
+  const insets = useSafeAreaInsets();
   const storageKey = params.forCategory === "1" ? CATEGORY_COLOR_STORAGE_KEY : COLOR_PICKER_STORAGE_KEY;
   const [selectedColor, setSelectedColor] = useState(params.color || "#3b82f6");
 
@@ -49,7 +51,10 @@ export default function ColorPickerScreen() {
           <Swatches />
         </ColorPicker>
       </ScrollView>
-      <View className="px-6 pb-6 pt-4 border-t border-tf-input-border">
+      <View
+        className="px-6 pt-4 border-t border-tf-input-border"
+        style={{ paddingBottom: 24 + insets.bottom }}
+      >
         <View className="flex-row gap-3">
           <Button
             variant="secondary"

@@ -1,4 +1,5 @@
 import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   useGetApiV1TimerSessionsId,
@@ -81,6 +82,7 @@ export default function EditSessionScreen() {
   const queryClient = useQueryClient();
   const zone = useUserTimezone();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const { data, isLoading, error } = useGetApiV1TimerSessionsId(sessionId ?? "");
   const session = data?.status === 200 ? data.data.data : null;
@@ -226,7 +228,10 @@ export default function EditSessionScreen() {
 
   return (
     <View className="flex-1 bg-tf-bg-primary">
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 24 }}>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ padding: 24, paddingBottom: 24 + insets.bottom }}
+      >
         <Text className="text-tf-text-secondary text-sm mb-2">
           {t("timesInTimezone", { zone })}
         </Text>

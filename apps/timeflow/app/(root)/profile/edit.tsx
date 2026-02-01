@@ -1,4 +1,5 @@
 import { View, Text, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -131,6 +132,7 @@ export default function EditProfileScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
   const { data: profileData, isLoading: isLoadingProfile } = useGetApiV1Me();
   const updateProfile = usePatchApiV1Me();
 
@@ -201,7 +203,10 @@ export default function EditProfileScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-tf-bg-primary"
     >
-      <ScrollView className="flex-1">
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}
+      >
         <View className="px-6 py-6">
           <Controller
             control={control}

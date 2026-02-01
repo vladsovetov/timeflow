@@ -8,6 +8,7 @@ import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/clerk-expo";
 import { configureApiClient } from "@acme/api-client";
 import * as SecureStore from "expo-secure-store";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SyncProvider } from "@/src/contexts/SyncContext";
 import { I18nProvider } from "@/src/i18n";
 
@@ -78,29 +79,31 @@ function ApiClientConfigurator({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <PersistQueryClientProvider
-        client={queryClient}
-        persistOptions={{
-          persister: asyncStoragePersister,
-          maxAge: ONE_MONTH_MS,
-        }}
-      >
-        <ClerkProvider
-          publishableKey={clerkPublishableKey ?? ""}
-          tokenCache={tokenCache}
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{
+            persister: asyncStoragePersister,
+            maxAge: ONE_MONTH_MS,
+          }}
         >
-          <I18nProvider>
-            <ClerkLoaded>
-              <ApiClientConfigurator>
-                <SyncProvider>
-                  <Slot />
-                </SyncProvider>
-              </ApiClientConfigurator>
-            </ClerkLoaded>
-          </I18nProvider>
-        </ClerkProvider>
-      </PersistQueryClientProvider>
+          <ClerkProvider
+            publishableKey={clerkPublishableKey ?? ""}
+            tokenCache={tokenCache}
+          >
+            <I18nProvider>
+              <ClerkLoaded>
+                <ApiClientConfigurator>
+                  <SyncProvider>
+                    <Slot />
+                  </SyncProvider>
+                </ApiClientConfigurator>
+              </ClerkLoaded>
+            </I18nProvider>
+          </ClerkProvider>
+        </PersistQueryClientProvider>
     </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }

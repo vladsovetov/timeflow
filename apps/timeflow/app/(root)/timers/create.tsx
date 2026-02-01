@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { usePostApiV1Timers, getGetApiV1TimersQueryKey } from "@acme/api-client";
 import type { CreateTimerRequest } from "@acme/api-client";
@@ -24,6 +25,7 @@ export default function CreateTimerScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const initialColor = useMemo(() => pickRandomColor(), []);
   const form = useTimerForm({ color: initialColor }, false);
 
@@ -69,7 +71,7 @@ export default function CreateTimerScreen() {
   return (
     <View className="flex-1 bg-tf-bg-primary">
       <TimerForm form={form} isUpdate={false} />
-      <View className="px-6 pb-6">
+      <View className="px-6 pb-6" style={{ paddingBottom: 24 + insets.bottom }}>
         <Button
           variant="primary"
           onPress={onSubmit}
