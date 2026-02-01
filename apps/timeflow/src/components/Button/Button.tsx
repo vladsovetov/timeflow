@@ -61,7 +61,7 @@ export function Button({
 }: ButtonProps) {
   const variantClasses = buttonStyles[variant];
   const textColorClasses = textStyles[variant];
-  const baseClasses = "px-4 py-2 rounded-lg items-center justify-center";
+  const baseClasses = "px-4 py-4 rounded-lg items-center justify-center";
   const disabledClasses = disabled ? "opacity-50" : "";
   const combinedClasses = twMerge(
     baseClasses,
