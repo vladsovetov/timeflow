@@ -293,6 +293,23 @@ export async function POST(request: Request) {
   }
   const isArchived = typeof is_archived === "boolean" ? is_archived : false;
 
+  const existingCount = await db
+    .selectFrom("timer")
+    .select(db.fn.count("id").as("count"))
+    .where("user_id", "=", user.id)
+    .where("is_deleted", "=", false)
+    .executeTakeFirst();
+
+  const count = Number(existingCount?.count ?? 0);
+  if (count >= 100) {
+    return NextResponse.json(
+      {
+        error: "Maximum number of timers (100) reached. Archive or delete a timer to create a new one.",
+      } satisfies ErrorResponse,
+      { status: 400 }
+    );
+  }
+
   try {
     const row = await db
       .insertInto("timer")
