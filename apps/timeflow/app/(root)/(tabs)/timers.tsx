@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { View, Text, ActivityIndicator, Pressable, RefreshControl } from "react-native";
+import { View, Text, ActivityIndicator, Pressable, RefreshControl, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -60,6 +60,7 @@ export default function TimersScreen() {
     [data]
   );
   const [timers, setTimers] = useState<TimerModel[]>([]);
+  const [isReorderMode, setIsReorderMode] = useState(false);
 
   useEffect(() => {
     setTimers(timersFromApi);
@@ -148,28 +149,38 @@ export default function TimersScreen() {
     );
   }
 
-  async function handleDragEnd({ data: newData }: { data: TimerModel[] }) {
-    if (!isToday) return;
+  function handleDragEnd({ data: newData }: { data: TimerModel[] }) {
+    if (!isToday || !isReorderMode) return;
     setTimers(newData);
+  }
+
+  const applyOrder = useCallback(async () => {
+    if (!isToday) return;
     try {
       const res = await reorderMutation.mutateAsync({
-        data: { timer_ids: newData.map((t) => t.id) },
+        data: { timer_ids: timers.map((t) => t.id) },
       });
       if (res.status === 200) {
         await queryClient.invalidateQueries({
           queryKey: getGetApiV1TimersQueryKey(),
         });
+        setIsReorderMode(false);
       }
     } catch {
       setTimers(timersFromApi);
     }
-  }
+  }, [isToday, timers, reorderMutation, queryClient, timersFromApi]);
+
+  const exitReorderMode = useCallback(() => {
+    setTimers(timersFromApi);
+    setIsReorderMode(false);
+  }, [timersFromApi]);
 
   function renderItem({ item, drag, isActive }: RenderItemParams<TimerModel>) {
     return (
       <ScaleDecorator>
         <View className="flex-row items-center mb-3">
-          {isToday && (
+          {isToday && isReorderMode && (
             <Pressable
               onLongPress={drag}
               disabled={isActive}
@@ -191,10 +202,58 @@ export default function TimersScreen() {
     );
   }
 
+  const fixedFooter = (
+    <View className="px-6 pb-6 pt-4 bg-tf-bg-primary border-t border-tf-bg-secondary">
+      {isReorderMode ? (
+        <>
+          <Button
+            variant="primary"
+            onPress={applyOrder}
+            className="w-full mb-3"
+            disabled={reorderMutation.isPending}
+          >
+            {reorderMutation.isPending ? "Saving…" : "Apply order"}
+          </Button>
+          <Button variant="ghost" onPress={exitReorderMode} className="w-full">
+            Cancel
+          </Button>
+        </>
+      ) : (
+        <>
+          {activeTimer != null && (
+            <View className="mb-3">
+              <Timer
+                timer={activeTimer}
+                timersQueryKey={timersQueryKey}
+                readOnly={!isToday}
+              />
+            </View>
+          )}
+          <Button
+            variant="primary"
+            onPress={() => router.push("/(root)/timers/create")}
+            className="w-full mb-3"
+          >
+            Create Timer
+          </Button>
+          {isToday && timers.length > 0 && (
+            <Button
+              variant="outline"
+              onPress={() => setIsReorderMode(true)}
+              className="w-full"
+            >
+              Change order
+            </Button>
+          )}
+        </>
+      )}
+    </View>
+  );
+
   return (
     <GestureDetector gesture={panGesture}>
       <View className="flex-1 bg-tf-bg-primary">
-        <View className="px-6 pt-16 pb-4">
+        <View className="px-6 pt-16 pb-4 bg-tf-bg-primary">
           <Text className="text-3xl font-bold text-tf-text-primary mb-2">
             Timers
           </Text>
@@ -232,49 +291,38 @@ export default function TimersScreen() {
         </View>
 
         {timers.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-tf-text-secondary text-center mb-6">
-            No timers yet. Create your first timer to get started!
-          </Text>
-          <Button
-            variant="primary"
-            onPress={() => router.push("/(root)/timers/create")}
-          >
-            Create Timer
-          </Button>
-        </View>
-      ) : (
-        <View className="flex-1 justify-between">
-          <DraggableFlatList
-            data={timers}
-            keyExtractor={(item: TimerModel) => item.id}
-            onDragEnd={handleDragEnd}
-            renderItem={renderItem}
-            contentContainerStyle={{ padding: 24, paddingTop: 8 }}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
-            }
-          />
-          <View className="px-6 pb-6">
-            {activeTimer != null && (
-              <View className="mb-3">
-                <Timer
-                  timer={activeTimer}
-                  timersQueryKey={timersQueryKey}
-                  readOnly={!isToday}
-                />
-              </View>
-            )}
-            <Button
-              variant="primary"
-              onPress={() => router.push("/(root)/timers/create")}
-              className="w-full"
+          <View className="flex-1">
+            <ScrollView
+              className="flex-1"
+              contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: 24 }}
             >
-              Create Timer
-            </Button>
+              <Text className="text-tf-text-secondary text-center mb-6">
+                No timers yet. Create your first timer to get started!
+              </Text>
+              <Button
+                variant="primary"
+                onPress={() => router.push("/(root)/timers/create")}
+              >
+                Create Timer
+              </Button>
+            </ScrollView>
           </View>
-        </View>
-      )}
+        ) : (
+          <View className="flex-1">
+            <DraggableFlatList
+              data={timers}
+              keyExtractor={(item: TimerModel) => item.id}
+              onDragEnd={handleDragEnd}
+              renderItem={renderItem}
+              containerStyle={{ flex: 1 }}
+              contentContainerStyle={{ padding: 24, paddingTop: 8, paddingBottom: 16 }}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
+              }
+            />
+            {fixedFooter}
+          </View>
+        )}
       </View>
     </GestureDetector>
   );

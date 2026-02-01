@@ -1,9 +1,25 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { DateTime } from "luxon";
 import { db, sql } from "@/db";
 import { getOrCreateUser } from "@/lib/user";
 import { splitSessionAtMidnight } from "@/lib/split-session-at-midnight";
 import type { ErrorResponse } from "@acme/api";
+
+const MAX_END = DateTime.fromMillis(8640000000000000);
+
+function sessionOverlaps(
+  startA: Date,
+  endA: Date | null,
+  startB: Date,
+  endB: Date | null
+): boolean {
+  const a1 = DateTime.fromJSDate(startA).toMillis();
+  const a2 = endA ? DateTime.fromJSDate(endA).toMillis() : MAX_END.toMillis();
+  const b1 = DateTime.fromJSDate(startB).toMillis();
+  const b2 = endB ? DateTime.fromJSDate(endB).toMillis() : MAX_END.toMillis();
+  return a1 < b2 && b1 < a2;
+}
 
 export async function GET(
   _request: Request,
@@ -120,6 +136,29 @@ export async function PATCH(
       return NextResponse.json(
         { error: "ended_at must be after started_at" } satisfies ErrorResponse,
         { status: 400 }
+      );
+    }
+
+    const otherSessionsEnd = await db
+      .selectFrom("timer_session")
+      .select(["started_at", "ended_at"])
+      .where("user_id", "=", user.id)
+      .where("timer_id", "=", session.timer_id)
+      .where("id", "!=", id)
+      .where("is_deleted", "=", false)
+      .execute();
+    const overlapsEnd = otherSessionsEnd.some((other) =>
+      sessionOverlaps(
+        currentStartedAt,
+        endedAtDate,
+        other.started_at,
+        other.ended_at
+      )
+    );
+    if (overlapsEnd) {
+      return NextResponse.json(
+        { error: "Session overlaps with an existing session" } satisfies ErrorResponse,
+        { status: 409 }
       );
     }
 
@@ -271,6 +310,30 @@ export async function PATCH(
       return NextResponse.json(
         { error: "ended_at must be after started_at" } satisfies ErrorResponse,
         { status: 400 }
+      );
+    }
+
+    const otherSessions = await db
+      .selectFrom("timer_session")
+      .select(["started_at", "ended_at"])
+      .where("user_id", "=", user.id)
+      .where("timer_id", "=", session.timer_id)
+      .where("id", "!=", id)
+      .where("is_deleted", "=", false)
+      .execute();
+
+    const overlaps = otherSessions.some((other) =>
+      sessionOverlaps(
+        newStartedAt,
+        newEndedAt,
+        other.started_at,
+        other.ended_at
+      )
+    );
+    if (overlaps) {
+      return NextResponse.json(
+        { error: "Session overlaps with an existing session" } satisfies ErrorResponse,
+        { status: 409 }
       );
     }
 

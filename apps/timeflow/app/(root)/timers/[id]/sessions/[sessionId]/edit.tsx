@@ -11,7 +11,7 @@ import {
 } from "@acme/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/src/components/Button/Button";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -20,19 +20,39 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useUserTimezone } from "@/src/contexts/AppContext";
 import { parseDateTime } from "@/src/lib/date";
 
-const editSessionSchema = yup.object({
-  started_at: yup.string().required("Start time is required"),
-  ended_at: yup
-    .string()
-    .nullable()
-    .test("after-start", "End time must be after start time", function (value) {
-      if (value == null || value === "") return true;
-      const { started_at } = this.parent;
-      return !!started_at && value > started_at;
-    }),
-});
+const MAX_END_ISO = "9999-12-31T23:59:59.999Z";
 
-type EditSessionFormValues = yup.InferType<typeof editSessionSchema>;
+function buildEditSessionSchema(otherSessions: { started_at: string; ended_at: string | null }[]) {
+  return yup
+    .object({
+      started_at: yup.string().required("Start time is required"),
+      ended_at: yup
+        .string()
+        .nullable()
+        .test("after-start", "End time must be after start time", function (value) {
+          if (value == null || value === "") return true;
+          const { started_at } = this.parent;
+          return !!started_at && value > started_at;
+        }),
+    })
+    .test(
+      "no-overlap",
+      "This session overlaps with an existing session",
+      function (value) {
+        if (!value?.started_at) return true;
+        const startA = value.started_at;
+        const endA = value.ended_at ?? MAX_END_ISO;
+        for (const other of otherSessions) {
+          const startB = other.started_at;
+          const endB = other.ended_at ?? MAX_END_ISO;
+          if (startA < endB && startB < endA) return false;
+        }
+        return true;
+      }
+    );
+}
+
+type EditSessionFormValues = yup.InferType<ReturnType<typeof buildEditSessionSchema>>;
 
 function applyPickedTimeToIso(
   isoString: string,
@@ -80,6 +100,15 @@ export default function EditSessionScreen() {
       ? timerSessions[currentIndex + 1]
       : null;
 
+  const otherSessions = useMemo(
+    () => timerSessions.filter((s) => s.id !== session?.id),
+    [timerSessions, session?.id]
+  );
+  const editSessionSchema = useMemo(
+    () => buildEditSessionSchema(otherSessions),
+    [otherSessions]
+  );
+
   const [pickerMode, setPickerMode] = useState<"start" | "end" | null>(null);
 
   const {
@@ -87,6 +116,7 @@ export default function EditSessionScreen() {
     watch,
     setValue,
     reset,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<EditSessionFormValues>({
     defaultValues: { started_at: "", ended_at: null },
@@ -107,7 +137,13 @@ export default function EditSessionScreen() {
 
   const updateMutation = usePatchApiV1TimerSessionsId({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (result) => {
+        // API returns 409 on overlap; generated client types may not include 409 until spec is regenerated
+        const statusNum: number = result.status;
+        if (statusNum === 409) {
+          setError("root", { message: "Session overlaps with an existing session" });
+          return;
+        }
         queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
         queryClient.invalidateQueries({
           queryKey: getGetApiV1TimerSessionsIdQueryKey(sessionId ?? ""),
@@ -214,6 +250,9 @@ export default function EditSessionScreen() {
         </TouchableOpacity>
         {errors.ended_at ? (
           <Text className="text-tf-error text-sm mb-4">{errors.ended_at.message}</Text>
+        ) : null}
+        {errors.root ? (
+          <Text className="text-tf-error text-sm mb-4">{errors.root.message}</Text>
         ) : null}
         {(previousSession ?? nextSession) ? (
           <View className="mb-6 rounded-xl bg-tf-input-bg border border-tf-input-border p-4">

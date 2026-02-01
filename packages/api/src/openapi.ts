@@ -740,6 +740,14 @@ registry.registerPath({
         },
       },
     },
+    409: {
+      description: "Session overlaps with an existing session",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
   },
 });
 

@@ -188,39 +188,39 @@ export default function TimerDetailsScreen() {
 
   return (
     <View className="flex-1 bg-tf-bg-primary">
+      {/* Fixed Header */}
+      <View className="px-6 pt-16 pb-4 flex-row items-center justify-between bg-tf-bg-primary">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="w-10 h-10 items-center justify-center mr-2"
+        >
+          <Ionicons name="chevron-back" size={28} color={borderColor} />
+        </TouchableOpacity>
+        <View className="flex-1">
+          <View className="flex-row items-center mb-2">
+            <Ionicons name={iconName} size={24} color={borderColor} style={{ marginRight: 8 }} />
+            <Text className="text-3xl font-bold text-tf-text-primary">
+              {timer.name}
+            </Text>
+          </View>
+          <Text className="text-tf-text-secondary capitalize">
+            {timer.timer_type}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => router.push(`/(root)/timers/${timer.id}/edit`)}
+          className="w-10 h-10 items-center justify-center"
+        >
+          <Ionicons name="pencil" size={24} color={borderColor} />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         className="flex-1"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
         }
       >
-        {/* Header */}
-        <View className="px-6 pt-16 pb-4 flex-row items-center justify-between">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="w-10 h-10 items-center justify-center mr-2"
-          >
-            <Ionicons name="chevron-back" size={28} color={borderColor} />
-          </TouchableOpacity>
-          <View className="flex-1">
-            <View className="flex-row items-center mb-2">
-              <Ionicons name={iconName} size={24} color={borderColor} style={{ marginRight: 8 }} />
-              <Text className="text-3xl font-bold text-tf-text-primary">
-                {timer.name}
-              </Text>
-            </View>
-            <Text className="text-tf-text-secondary capitalize">
-              {timer.timer_type}
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => router.push(`/(root)/timers/${timer.id}/edit`)}
-            className="w-10 h-10 items-center justify-center"
-          >
-            <Ionicons name="pencil" size={24} color={borderColor} />
-          </TouchableOpacity>
-        </View>
-
         {/* Weekly Chart */}
         <View className="px-6 mb-6">
           <Text className="text-lg font-semibold text-tf-text-primary mb-4">

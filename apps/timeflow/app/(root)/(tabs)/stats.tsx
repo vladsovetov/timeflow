@@ -403,6 +403,43 @@ export default function StatsScreen() {
   return (
     <GestureDetector gesture={panGesture}>
       <View className="flex-1 bg-tf-bg-primary">
+        <View className="px-6 pt-16 pb-4 bg-tf-bg-primary">
+          <Text className="text-3xl font-bold text-tf-text-primary mb-2">
+            Stats
+          </Text>
+          <Text className="text-base text-tf-text-secondary mb-3">
+            {formatDateLabel(selectedDate, zone)}
+          </Text>
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={goToPrevDay}
+              className="flex-1 py-2 rounded-lg items-center justify-center bg-tf-bg-secondary"
+            >
+              <Ionicons name="chevron-back" size={24} color="#C7C9E3" />
+            </Pressable>
+            <Pressable
+              onPress={goToToday}
+              className={`flex-1 py-2 rounded-lg items-center justify-center ${
+                isToday ? "bg-tf-purple" : "bg-tf-bg-secondary"
+              }`}
+            >
+              <Text
+                className={`font-medium ${
+                  isToday ? "text-white" : "text-tf-text-secondary"
+                }`}
+              >
+                Today
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={goToNextDay}
+              className="flex-1 py-2 rounded-lg items-center justify-center bg-tf-bg-secondary"
+            >
+              <Ionicons name="chevron-forward" size={24} color="#C7C9E3" />
+            </Pressable>
+          </View>
+        </View>
+
         <ScrollView
           className="flex-1"
           refreshControl={
@@ -413,43 +450,6 @@ export default function StatsScreen() {
             />
           }
         >
-          <View className="px-6 pt-16 pb-4">
-            <Text className="text-3xl font-bold text-tf-text-primary mb-2">
-              Stats
-            </Text>
-            <Text className="text-base text-tf-text-secondary mb-3">
-              {formatDateLabel(selectedDate, zone)}
-            </Text>
-            <View className="flex-row gap-2">
-              <Pressable
-                onPress={goToPrevDay}
-                className="flex-1 py-2 rounded-lg items-center justify-center bg-tf-bg-secondary"
-              >
-                <Ionicons name="chevron-back" size={24} color="#C7C9E3" />
-              </Pressable>
-              <Pressable
-                onPress={goToToday}
-                className={`flex-1 py-2 rounded-lg items-center justify-center ${
-                  isToday ? "bg-tf-purple" : "bg-tf-bg-secondary"
-                }`}
-              >
-                <Text
-                  className={`font-medium ${
-                    isToday ? "text-white" : "text-tf-text-secondary"
-                  }`}
-                >
-                  Today
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={goToNextDay}
-                className="flex-1 py-2 rounded-lg items-center justify-center bg-tf-bg-secondary"
-              >
-                <Ionicons name="chevron-forward" size={24} color="#C7C9E3" />
-              </Pressable>
-            </View>
-          </View>
-
           <View className="px-6 mb-6">
             <View className="bg-tf-bg-secondary rounded-xl p-4 mb-4">
               <Text className="text-lg font-semibold text-tf-text-primary mb-2">
