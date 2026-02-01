@@ -55,6 +55,17 @@ function isTempSessionId(id: string | null): boolean {
   return id != null && id.startsWith(TEMP_SESSION_PREFIX);
 }
 
+/** Returns white or dark text color for contrast on the given hex background. */
+function getContrastTextColor(hex: string): string {
+  if (!hex || hex.length < 7) return "#1f2937";
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return "#1f2937";
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? "#1f2937" : "#ffffff";
+}
+
 export function Timer({
   timer,
   onStart,
@@ -245,10 +256,6 @@ export function Timer({
 
   const iconName = TIMER_TYPE_ICONS[timer.timer_type] || TIMER_TYPE_ICONS.other;
   const accentColor = timer.color ?? (timer.category?.color ?? "#6B7280");
-  const cardBgColor =
-    timer.category?.color != null && timer.category.color !== ""
-      ? `${timer.category.color}ED`
-      : undefined;
 
   function handleCardPress() {
     router.push(`/(root)/timers/${timer.id}`);
@@ -257,11 +264,10 @@ export function Timer({
   return (
     <TouchableOpacity
       onPress={handleCardPress}
-      className={`rounded-xl p-4 flex-row items-center ${cardBgColor == null ? "bg-tf-bg-secondary" : ""}`}
+      className="rounded-xl p-4 flex-row items-center bg-tf-bg-secondary"
       style={{
         borderWidth: 2,
         borderColor: accentColor,
-        ...(cardBgColor != null ? { backgroundColor: cardBgColor } : {}),
       }}
       activeOpacity={0.7}
     >
@@ -269,8 +275,25 @@ export function Timer({
         <Ionicons name={iconName} size={32} color={accentColor} />
       </View>
 
-      <View className="flex-1 items-center">
-        <Text className="text-2xl font-mono font-semibold text-tf-text-primary">
+      <View className="flex-1">
+        <Text className="text-base font-semibold text-tf-text-primary" numberOfLines={1}>
+          {timer.name}
+        </Text>
+        {timer.category != null && timer.category.color != null && timer.category.color !== "" && (
+          <View
+            className="self-start px-2 py-0.5 rounded-md mt-1"
+            style={{ backgroundColor: timer.category.color }}
+          >
+            <Text
+              className="text-xs font-medium"
+              style={{ color: getContrastTextColor(timer.category.color) }}
+              numberOfLines={1}
+            >
+              {timer.category.name}
+            </Text>
+          </View>
+        )}
+        <Text className="text-2xl font-mono font-semibold text-tf-text-primary mt-1">
           {formatTime(time)}
         </Text>
         {timer.min_time != null && timer.min_time > 0 && (
