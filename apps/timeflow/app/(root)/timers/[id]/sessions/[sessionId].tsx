@@ -89,6 +89,13 @@ export default function SessionDetailsScreen() {
     },
   });
 
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([refetchTimer(), refetchSession()]);
+    setRefreshing(false);
+  }, [refetchTimer, refetchSession]);
+
   const handleDelete = () => {
     Alert.alert(
       "Delete Session",
@@ -137,13 +144,6 @@ export default function SessionDetailsScreen() {
   const duration = calculateDuration(session.started_at, session.ended_at, zone);
   const isActive = session.ended_at === null;
   const borderColor = timer.color ?? "#6B7280";
-
-  const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await Promise.all([refetchTimer(), refetchSession()]);
-    setRefreshing(false);
-  }, [refetchTimer, refetchSession]);
 
   return (
     <View className="flex-1 bg-tf-bg-primary">
