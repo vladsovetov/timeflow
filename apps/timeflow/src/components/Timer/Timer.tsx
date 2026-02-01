@@ -42,6 +42,8 @@ interface TimerProps {
   timersQueryKey?: readonly unknown[];
   /** When true, hide start/stop buttons (e.g. when viewing past/future days). Card remains tappable to open. */
   readOnly?: boolean;
+  /** When true, applies enhanced visual styling to highlight the active/running timer. */
+  isActive?: boolean;
 }
 
 function isTempSessionId(id: string | null): boolean {
@@ -66,6 +68,7 @@ export function Timer({
   timersQueryKey,
   readOnly = false,
   onLongPress,
+  isActive = false,
 }: TimerProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -256,19 +259,40 @@ export function Timer({
     router.push(`/(root)/timers/${timer.id}`);
   }
 
+  // Parse accent color for background tint when active
+  const getActiveBackgroundColor = () => {
+    if (!isActive || !accentColor || accentColor.length < 7) return undefined;
+    const r = parseInt(accentColor.slice(1, 3), 16);
+    const g = parseInt(accentColor.slice(3, 5), 16);
+    const b = parseInt(accentColor.slice(5, 7), 16);
+    if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return undefined;
+    return `rgba(${r}, ${g}, ${b}, 0.15)`;
+  };
+
   return (
     <TouchableOpacity
       onPress={handleCardPress}
       onLongPress={onLongPress}
-      className="rounded-xl p-2 flex-row items-center bg-tf-bg-secondary"
-      style={{
-        borderWidth: 2,
-        borderColor: accentColor,
-      }}
+      className={`rounded-xl p-3 flex-row items-center ${isActive ? "" : "bg-tf-bg-secondary"}`}
+      style={[
+        {
+          borderWidth: isActive ? 3 : 2,
+          borderColor: accentColor,
+        },
+        isActive && {
+          backgroundColor: getActiveBackgroundColor(),
+          shadowColor: accentColor,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.7,
+          shadowRadius: 16,
+          elevation: 12,
+          transform: [{ scale: 1.02 }],
+        },
+      ]}
       activeOpacity={0.7}
     >
       <View className="mr-4">
-        <Ionicons name={iconName} size={32} color={accentColor} />
+        <Ionicons name={iconName} size={isActive ? 36 : 32} color={accentColor} />
       </View>
 
       <View className="flex-1">

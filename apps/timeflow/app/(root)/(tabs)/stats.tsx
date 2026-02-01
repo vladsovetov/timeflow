@@ -221,45 +221,6 @@ export default function StatsScreen() {
   const isLoading = loadingTimers || loadingSessions;
   const hasCachedData = timersRes != null && sessionsRes != null;
 
-  if (isLoading && !hasCachedData) {
-    return (
-      <View className="flex-1 bg-tf-bg-primary items-center justify-center">
-        <ActivityIndicator size="large" color="#7C3AED" />
-        <Text className="text-tf-text-secondary mt-4">{t("loadingStats")}</Text>
-      </View>
-    );
-  }
-
-  const timelineWidth = Dimensions.get("window").width - 48;
-  const timelineTotalMs = dayEnd.toMillis() - dayStart.toMillis();
-
-  const renderTimelineBlocks = (sessions: SessionWithTimer[]) => {
-    return sessions.map((s) => {
-      const { startMs, endMs } = sessionClipToDay(s, dayStart, dayEnd, zone);
-      const left =
-        ((startMs - dayStart.toMillis()) / timelineTotalMs) * timelineWidth;
-      const width = Math.max(
-        4,
-        ((endMs - startMs) / timelineTotalMs) * timelineWidth
-      );
-      const color =
-        s.timer.color ??
-        s.timer.category?.color ??
-        "#7C3AED";
-      return (
-        <View
-          key={s.id}
-          className="absolute h-6 rounded"
-          style={{
-            left,
-            width,
-            backgroundColor: color,
-          }}
-        />
-      );
-    });
-  };
-
   const groupedByCategory = useMemo(() => {
     const map = new Map<string, SessionWithTimer[]>();
     for (const s of sessionsOnDay) {
@@ -394,6 +355,45 @@ export default function StatsScreen() {
     zone,
     t,
   ]);
+
+  if (isLoading && !hasCachedData) {
+    return (
+      <View className="flex-1 bg-tf-bg-primary items-center justify-center">
+        <ActivityIndicator size="large" color="#7C3AED" />
+        <Text className="text-tf-text-secondary mt-4">{t("loadingStats")}</Text>
+      </View>
+    );
+  }
+
+  const timelineWidth = Dimensions.get("window").width - 48;
+  const timelineTotalMs = dayEnd.toMillis() - dayStart.toMillis();
+
+  const renderTimelineBlocks = (sessions: SessionWithTimer[]) => {
+    return sessions.map((s) => {
+      const { startMs, endMs } = sessionClipToDay(s, dayStart, dayEnd, zone);
+      const left =
+        ((startMs - dayStart.toMillis()) / timelineTotalMs) * timelineWidth;
+      const width = Math.max(
+        4,
+        ((endMs - startMs) / timelineTotalMs) * timelineWidth
+      );
+      const color =
+        s.timer.color ??
+        s.timer.category?.color ??
+        "#7C3AED";
+      return (
+        <View
+          key={s.id}
+          className="absolute h-6 rounded"
+          style={{
+            left,
+            width,
+            backgroundColor: color,
+          }}
+        />
+      );
+    });
+  };
 
   return (
     <GestureDetector gesture={panGesture}>

@@ -1,0 +1,36 @@
+---
+description: Use early returns for loading/error/empty states, placed right before the main return; all hooks must run before any return
+alwaysApply: true
+---
+
+# Early returns in components
+
+Use **early returns** for loading, error, and empty states so the main return is the primary “happy path” at the end of the component.
+
+## Rules
+
+- **Call all hooks unconditionally** at the top of the component. Never call hooks (e.g. `useState`, `useMemo`, `useCallback`, `useEffect`, `useQuery`) after a conditional return. Otherwise React will see a different number of hooks between renders and throw “Rendered more hooks than during the previous render.”
+- Place **early returns** (loading spinner, error message, empty state) **immediately before the main return**. The main return should be the default/success UI.
+- Order: (1) all hooks, (2) early returns for edge cases, (3) any non-hook setup used only by the main UI (e.g. derived constants, render helpers), (4) main return.
+
+## Example
+
+```tsx
+function Screen() {
+  const [data, setData] = useState(null);
+  const isLoading = useSomeQuery().isLoading;
+  const items = useMemo(() => process(data), [data]); // hooks before any return
+
+  if (isLoading && !data) {
+    return <LoadingSpinner />;
+  }
+  if (error) {
+    return <ErrorMessage />;
+  }
+
+  const chartWidth = Dimensions.get("window").width - 48; // non-hook setup ok after early returns
+  return <MainContent items={items} width={chartWidth} />;
+}
+```
+
+Do not put hooks after an early return; keep the main return at the end and use early returns only for alternate UI paths.

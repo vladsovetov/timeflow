@@ -124,6 +124,26 @@ export default function TimersScreen() {
     [timers]
   );
 
+  const handleDragEnd = useCallback(
+    async ({ data: newData }: { data: TimerModel[] }) => {
+      if (!isToday) return;
+      setTimers(newData);
+      try {
+        const res = await reorderMutation.mutateAsync({
+          data: { timer_ids: newData.map((t) => t.id) },
+        });
+        if (res.status === 200) {
+          await queryClient.invalidateQueries({
+            queryKey: getGetApiV1TimersQueryKey(),
+          });
+        }
+      } catch {
+        setTimers(timersFromApi);
+      }
+    },
+    [isToday, reorderMutation, queryClient, timersFromApi]
+  );
+
   if (showFullscreenLoading) {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center">
@@ -146,26 +166,6 @@ export default function TimersScreen() {
     );
   }
 
-  const handleDragEnd = useCallback(
-    async ({ data: newData }: { data: TimerModel[] }) => {
-      if (!isToday) return;
-      setTimers(newData);
-      try {
-        const res = await reorderMutation.mutateAsync({
-          data: { timer_ids: newData.map((t) => t.id) },
-        });
-        if (res.status === 200) {
-          await queryClient.invalidateQueries({
-            queryKey: getGetApiV1TimersQueryKey(),
-          });
-        }
-      } catch {
-        setTimers(timersFromApi);
-      }
-    },
-    [isToday, reorderMutation, queryClient, timersFromApi]
-  );
-
   function renderItem({ item, drag }: RenderItemParams<TimerModel>) {
     return (
       <ScaleDecorator>
@@ -183,17 +183,16 @@ export default function TimersScreen() {
     );
   }
 
-  const fixedFooter = (
-    <View className="px-6 pb-6 pt-4 bg-tf-bg-primary border-t border-tf-bg-secondary">
-      {activeTimer != null && (
-        <Timer
-          timer={activeTimer}
-          timersQueryKey={timersQueryKey}
-          readOnly={!isToday}
-        />
-      )}
+  const fixedFooter = activeTimer != null ? (
+    <View className="px-6 pb-6 pt-4 bg-tf-bg-primary">
+      <Timer
+        timer={activeTimer}
+        timersQueryKey={timersQueryKey}
+        readOnly={!isToday}
+        isActive
+      />
     </View>
-  );
+  ) : null;
 
   return (
     <GestureDetector gesture={panGesture}>
