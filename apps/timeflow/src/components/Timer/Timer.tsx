@@ -34,6 +34,7 @@ interface TimerProps {
   timer: TimerModel;
   onStart?: () => void;
   onPause?: () => void;
+  onLongPress?: () => void;
   /** Query key for timers list (required for optimistic cache updates). */
   timersQueryKey?: readonly unknown[];
   /** When true, hide start/stop buttons (e.g. when viewing past/future days). Card remains tappable to open. */
@@ -72,6 +73,7 @@ export function Timer({
   onPause,
   timersQueryKey,
   readOnly = false,
+  onLongPress,
 }: TimerProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -264,6 +266,7 @@ export function Timer({
   return (
     <TouchableOpacity
       onPress={handleCardPress}
+      onLongPress={onLongPress}
       className="rounded-xl p-2 flex-row items-center bg-tf-bg-secondary"
       style={{
         borderWidth: 2,

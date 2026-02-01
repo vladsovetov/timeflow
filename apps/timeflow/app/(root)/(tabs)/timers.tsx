@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ActivityIndicator,
-  Pressable,
   RefreshControl,
   ScrollView,
 } from "react-native";
@@ -15,7 +14,6 @@ import DraggableFlatList, {
   ScaleDecorator,
   type RenderItemParams,
 } from "react-native-draggable-flatlist";
-import { Ionicons } from "@expo/vector-icons";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import {
   getApiV1Timers,
@@ -58,7 +56,6 @@ export default function TimersScreen() {
     [data]
   );
   const [timers, setTimers] = useState<TimerModel[]>([]);
-  const [isReorderMode, setIsReorderMode] = useState(false);
 
   useEffect(() => {
     setTimers(timersFromApi);
@@ -147,52 +144,36 @@ export default function TimersScreen() {
     );
   }
 
-  function handleDragEnd({ data: newData }: { data: TimerModel[] }) {
-    if (!isToday || !isReorderMode) return;
-    setTimers(newData);
-  }
-
-  const applyOrder = useCallback(async () => {
-    if (!isToday) return;
-    try {
-      const res = await reorderMutation.mutateAsync({
-        data: { timer_ids: timers.map((t) => t.id) },
-      });
-      if (res.status === 200) {
-        await queryClient.invalidateQueries({
-          queryKey: getGetApiV1TimersQueryKey(),
+  const handleDragEnd = useCallback(
+    async ({ data: newData }: { data: TimerModel[] }) => {
+      if (!isToday) return;
+      setTimers(newData);
+      try {
+        const res = await reorderMutation.mutateAsync({
+          data: { timer_ids: newData.map((t) => t.id) },
         });
-        setIsReorderMode(false);
+        if (res.status === 200) {
+          await queryClient.invalidateQueries({
+            queryKey: getGetApiV1TimersQueryKey(),
+          });
+        }
+      } catch {
+        setTimers(timersFromApi);
       }
-    } catch {
-      setTimers(timersFromApi);
-    }
-  }, [isToday, timers, reorderMutation, queryClient, timersFromApi]);
+    },
+    [isToday, reorderMutation, queryClient, timersFromApi]
+  );
 
-  const exitReorderMode = useCallback(() => {
-    setTimers(timersFromApi);
-    setIsReorderMode(false);
-  }, [timersFromApi]);
-
-  function renderItem({ item, drag, isActive }: RenderItemParams<TimerModel>) {
+  function renderItem({ item, drag }: RenderItemParams<TimerModel>) {
     return (
       <ScaleDecorator>
         <View className="flex-row items-center mb-3">
-          {isToday && isReorderMode && (
-            <Pressable
-              onLongPress={drag}
-              disabled={isActive}
-              className="mr-2 py-4 px-1 justify-center"
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="reorder-three" size={24} color="#6B7280" />
-            </Pressable>
-          )}
           <View className="flex-1">
             <Timer
               timer={item}
               timersQueryKey={timersQueryKey}
               readOnly={!isToday}
+              onLongPress={isToday ? drag : undefined}
             />
           </View>
         </View>
@@ -202,49 +183,22 @@ export default function TimersScreen() {
 
   const fixedFooter = (
     <View className="px-6 pb-6 pt-4 bg-tf-bg-primary border-t border-tf-bg-secondary">
-      {isReorderMode ? (
-        <>
-          <Button
-            variant="primary"
-            onPress={applyOrder}
-            className="w-full mb-3"
-            disabled={reorderMutation.isPending}
-          >
-            {reorderMutation.isPending ? t("saving") : t("applyOrder")}
-          </Button>
-          <Button variant="ghost" onPress={exitReorderMode} className="w-full">
-            {t("cancel")}
-          </Button>
-        </>
-      ) : (
-        <>
-          {activeTimer != null && (
-            <View className="mb-3">
-              <Timer
-                timer={activeTimer}
-                timersQueryKey={timersQueryKey}
-                readOnly={!isToday}
-              />
-            </View>
-          )}
-          <Button
-            variant="primary"
-            onPress={() => router.push("/(root)/timers/create")}
-            className="w-full mb-3"
-          >
-            {t("createTimer")}
-          </Button>
-          {isToday && timers.length > 0 && (
-            <Button
-              variant="outline"
-              onPress={() => setIsReorderMode(true)}
-              className="w-full"
-            >
-              {t("changeOrder")}
-            </Button>
-          )}
-        </>
+      {activeTimer != null && (
+        <View className="mb-3">
+          <Timer
+            timer={activeTimer}
+            timersQueryKey={timersQueryKey}
+            readOnly={!isToday}
+          />
+        </View>
       )}
+      <Button
+        variant="primary"
+        onPress={() => router.push("/(root)/timers/create")}
+        className="w-full mb-3"
+      >
+        {t("createTimer")}
+      </Button>
     </View>
   );
 
