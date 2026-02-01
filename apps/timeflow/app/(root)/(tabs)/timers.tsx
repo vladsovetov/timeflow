@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { View, Text, ActivityIndicator, Pressable } from "react-native";
+import { View, Text, ActivityIndicator, Pressable, RefreshControl } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -96,6 +96,13 @@ export default function TimersScreen() {
   const hasCachedData = data != null && dataUpdatedAt > 0;
   const showFullscreenLoading = isLoading && !hasCachedData;
   const showFullscreenError = error != null && !hasCachedData;
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   if (showFullscreenLoading) {
     return (
@@ -222,6 +229,9 @@ export default function TimersScreen() {
             onDragEnd={handleDragEnd}
             renderItem={renderItem}
             contentContainerStyle={{ padding: 24, paddingTop: 8 }}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
+            }
           />
           <View className="px-6 pb-6">
             <Button

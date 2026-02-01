@@ -1,4 +1,5 @@
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from "react-native";
+import { useCallback, useState } from "react";
+import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useGetApiV1TimerSessions, useGetApiV1TimersId } from "@acme/api-client";
 import { useUserTimezone } from "@/src/contexts/AppContext";
@@ -59,8 +60,10 @@ export default function TimerSessionsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const zone = useUserTimezone();
 
-  const { data: timerData, isLoading: isLoadingTimer } = useGetApiV1TimersId(id ?? "");
-  const { data: sessionsData, isLoading: isLoadingSessions, error } = useGetApiV1TimerSessions();
+  const { data: timerData, isLoading: isLoadingTimer, refetch: refetchTimer } =
+    useGetApiV1TimersId(id ?? "");
+  const { data: sessionsData, isLoading: isLoadingSessions, error, refetch: refetchSessions } =
+    useGetApiV1TimerSessions();
 
   const timer = timerData?.status === 200 ? timerData.data.data : null;
   const allSessions = sessionsData?.status === 200 ? sessionsData.data.data : [];
@@ -86,6 +89,13 @@ export default function TimerSessionsScreen() {
     );
   }
 
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([refetchTimer(), refetchSessions()]);
+    setRefreshing(false);
+  }, [refetchTimer, refetchSessions]);
+
   return (
     <View className="flex-1 bg-tf-bg-primary">
       <View className="px-6 pt-16 pb-4">
@@ -108,6 +118,9 @@ export default function TimerSessionsScreen() {
           data={sessions}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 24, paddingTop: 8 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
+          }
           renderItem={({ item }) => {
             const duration = calculateDuration(item.started_at, item.ended_at, zone);
             const isActive = item.ended_at === null;

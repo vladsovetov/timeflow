@@ -1,4 +1,5 @@
-import { View, Text, ActivityIndicator, ScrollView } from "react-native";
+import { useCallback, useState } from "react";
+import { View, Text, ActivityIndicator, ScrollView, RefreshControl } from "react-native";
 import { useGetApiV1Me } from "@acme/api-client";
 import { useAuth } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
@@ -8,6 +9,13 @@ export default function ProfileScreen() {
   const { data, isLoading, error, refetch } = useGetApiV1Me();
   const { signOut } = useAuth();
   const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   if (isLoading) {
     return (
@@ -35,7 +43,12 @@ export default function ProfileScreen() {
   const userId = profile?.userId ?? null;
 
   return (
-    <ScrollView className="flex-1 bg-tf-bg-primary">
+    <ScrollView
+      className="flex-1 bg-tf-bg-primary"
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
+      }
+    >
       <View className="px-6 pt-16 pb-4">
         <Text className="text-3xl font-bold text-tf-text-primary mb-8">
           Profile

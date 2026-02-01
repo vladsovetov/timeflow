@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, FlatList, ActivityIndicator, ScrollView, TouchableOpacity, Dimensions } from "react-native";
+import React, { useCallback, useState } from "react";
+import { View, Text, FlatList, ActivityIndicator, ScrollView, TouchableOpacity, Dimensions, RefreshControl } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   useGetApiV1TimersId,
@@ -99,11 +99,13 @@ export default function TimerDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const zone = useUserTimezone();
   
-  const { data: timerData, isLoading: isLoadingTimer, error: timerError } = useGetApiV1TimersId(id ?? "");
-  const { data: sessionsData, isLoading: isLoadingSessions, error: sessionsError } = useGetApiV1TimerSessions();
-  
+  const { data: timerData, isLoading: isLoadingTimer, error: timerError, refetch: refetchTimer } =
+    useGetApiV1TimersId(id ?? "");
+  const { data: sessionsData, isLoading: isLoadingSessions, error: sessionsError, refetch: refetchSessions } =
+    useGetApiV1TimerSessions();
+
   const weekDates = useMemo(() => getLastWeekDates(zone), [zone]);
-  const { data: statsData, isLoading: isLoadingStats } = useGetApiV1TimersIdStats(
+  const { data: statsData, isLoading: isLoadingStats, refetch: refetchStats } = useGetApiV1TimersIdStats(
     id ?? "",
     { start_date: weekDates.start, end_date: weekDates.end }
   );
@@ -152,6 +154,13 @@ export default function TimerDetailsScreen() {
     return Math.max(...chartData.map((d) => d.value), 1);
   }, [chartData]);
 
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([refetchTimer(), refetchSessions(), refetchStats()]);
+    setRefreshing(false);
+  }, [refetchTimer, refetchSessions, refetchStats]);
+
   if (isLoading) {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center">
@@ -179,7 +188,12 @@ export default function TimerDetailsScreen() {
 
   return (
     <View className="flex-1 bg-tf-bg-primary">
-      <ScrollView className="flex-1">
+      <ScrollView
+        className="flex-1"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
+        }
+      >
         {/* Header */}
         <View className="px-6 pt-16 pb-4 flex-row items-center justify-between">
           <TouchableOpacity

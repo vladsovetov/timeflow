@@ -1,4 +1,5 @@
-import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity } from "react-native";
+import { useCallback, useState } from "react";
+import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity, RefreshControl } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   useGetApiV1TimersId,
@@ -64,9 +65,9 @@ export default function SessionDetailsScreen() {
   const { id, sessionId } = useLocalSearchParams<{ id: string; sessionId: string }>();
   const zone = useUserTimezone();
 
-  const { data: timerData, isLoading: isLoadingTimer, error: timerError } =
+  const { data: timerData, isLoading: isLoadingTimer, error: timerError, refetch: refetchTimer } =
     useGetApiV1TimersId(id ?? "");
-  const { data: sessionData, isLoading: isLoadingSession, error: sessionError } =
+  const { data: sessionData, isLoading: isLoadingSession, error: sessionError, refetch: refetchSession } =
     useGetApiV1TimerSessionsId(sessionId ?? "");
 
   const timer = timerData?.status === 200 ? timerData.data.data : null;
@@ -101,9 +102,21 @@ export default function SessionDetailsScreen() {
   const isActive = session.ended_at === null;
   const borderColor = timer.color ?? "#6B7280";
 
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([refetchTimer(), refetchSession()]);
+    setRefreshing(false);
+  }, [refetchTimer, refetchSession]);
+
   return (
     <View className="flex-1 bg-tf-bg-primary">
-      <ScrollView className="flex-1">
+      <ScrollView
+        className="flex-1"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#7C3AED" />
+        }
+      >
         <View className="px-6 pt-16 pb-4 flex-row items-center justify-between">
           <TouchableOpacity
             onPress={() => router.back()}
