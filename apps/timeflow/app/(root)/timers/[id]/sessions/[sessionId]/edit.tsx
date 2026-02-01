@@ -312,6 +312,8 @@ export default function EditSessionScreen() {
         isVisible={pickerMode !== null}
         mode="time"
         date={pickerDate ?? DateTime.now().toJSDate()}
+        accentColor="#7C3AED"
+        themeVariant="dark"
         onConfirm={onPickerConfirm}
         onCancel={() => setPickerMode(null)}
       />

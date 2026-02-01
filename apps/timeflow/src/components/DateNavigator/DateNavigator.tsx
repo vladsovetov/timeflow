@@ -130,6 +130,8 @@ export function DateNavigator({ value, onChange, zone }: DateNavigatorProps) {
                 value={selectedDate.toJSDate()}
                 mode="date"
                 display="spinner"
+                accentColor="#7C3AED"
+                themeVariant="dark"
                 onChange={onIOSDateChange}
               />
             </Pressable>
