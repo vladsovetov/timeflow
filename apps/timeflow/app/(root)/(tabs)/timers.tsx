@@ -119,6 +119,12 @@ export default function TimersScreen() {
     }, 60_000);
     return () => clearInterval(interval);
   }, [zone, selectedDate, refetch]);
+   
+
+  const activeTimer = useMemo(
+    () => timers.find((t) => t.timer_session_in_progress != null) ?? null,
+    [timers]
+  );
 
   if (showFullscreenLoading) {
     return (
@@ -158,11 +164,6 @@ export default function TimersScreen() {
       setTimers(timersFromApi);
     }
   }
-
-  const activeTimer = useMemo(
-    () => timers.find((t) => t.timer_session_in_progress != null) ?? null,
-    [timers]
-  );
 
   function renderItem({ item, drag, isActive }: RenderItemParams<TimerModel>) {
     return (
