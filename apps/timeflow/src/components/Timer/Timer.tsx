@@ -7,6 +7,7 @@ import {
   usePostApiV1TimerSessions,
   usePatchApiV1TimerSessionsId,
   getGetApiV1TimersQueryKey,
+  getGetApiV1TimerSessionsQueryKey,
   type Timer as TimerModel,
 } from "@acme/api-client";
 import { useUserTimezone } from "@/src/contexts/AppContext";
@@ -163,6 +164,7 @@ export function Timer({
         onSuccess: (res) => {
           if (res.status === 201) {
             queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+            queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
           }
         },
         onError: () => {
@@ -174,6 +176,7 @@ export function Timer({
         },
         onSettled: () => {
           queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
         },
       }
     );
@@ -224,6 +227,7 @@ export function Timer({
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
         },
         onError: () => {
           syncQueueTimerSessions.enqueueEndSession({
@@ -233,6 +237,7 @@ export function Timer({
         },
         onSettled: () => {
           queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
         },
       }
     );
