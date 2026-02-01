@@ -1,10 +1,16 @@
 import { useCallback, useState } from "react";
-import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity, RefreshControl } from "react-native";
+import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity, RefreshControl, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   useGetApiV1TimersId,
   useGetApiV1TimerSessionsId,
+  useDeleteApiV1TimerSessionsId,
+  getGetApiV1TimersIdQueryKey,
+  getGetApiV1TimersQueryKey,
+  getGetApiV1TimerSessionsQueryKey,
+  getGetApiV1TimerSessionsIdQueryKey,
 } from "@acme/api-client";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/src/components/Button/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { useUserTimezone } from "@/src/contexts/AppContext";
@@ -62,6 +68,7 @@ function calculateDuration(startedAt: string, endedAt: string | null, zone: stri
 
 export default function SessionDetailsScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { id, sessionId } = useLocalSearchParams<{ id: string; sessionId: string }>();
   const zone = useUserTimezone();
 
@@ -69,6 +76,35 @@ export default function SessionDetailsScreen() {
     useGetApiV1TimersId(id ?? "");
   const { data: sessionData, isLoading: isLoadingSession, error: sessionError, refetch: refetchSession } =
     useGetApiV1TimerSessionsId(sessionId ?? "");
+
+  const deleteMutation = useDeleteApiV1TimerSessionsId({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+        if (id) queryClient.invalidateQueries({ queryKey: getGetApiV1TimersIdQueryKey(id) });
+        queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
+        if (sessionId) queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsIdQueryKey(sessionId) });
+        router.back();
+      },
+    },
+  });
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Delete Session",
+      "Are you sure you want to delete this session? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            if (sessionId) deleteMutation.mutate({ id: sessionId });
+          },
+        },
+      ]
+    );
+  };
 
   const timer = timerData?.status === 200 ? timerData.data.data : null;
   const session = sessionData?.status === 200 ? sessionData.data.data : null;
@@ -176,6 +212,15 @@ export default function SessionDetailsScreen() {
               </>
             ) : null}
           </View>
+
+          <Button
+            variant="danger"
+            onPress={handleDelete}
+            disabled={deleteMutation.isPending}
+            className="mt-6"
+          >
+            {deleteMutation.isPending ? "Deleting..." : "Delete Session"}
+          </Button>
         </View>
       </ScrollView>
     </View>
