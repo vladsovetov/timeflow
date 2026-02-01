@@ -24,6 +24,25 @@ export async function getOrCreateUser(
       })
       .returning("id")
       .executeTakeFirstOrThrow();
+
+    await db
+      .insertInto("timer")
+      .values({
+        id: sql`gen_random_uuid()`,
+        user_id: row.id,
+        timer_type: "sleep",
+        name: "Sleep",
+        color: null,
+        sort_order: 0,
+        min_time: null,
+        is_archived: false,
+        is_deleted: false,
+        created_at: sql`now()`,
+        updated_at: sql`now()`,
+        updated_by: row.id,
+      })
+      .execute();
+
     return { id: row.id };
   } catch (e: unknown) {
     const err = e as { code?: string };
