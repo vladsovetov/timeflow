@@ -30,6 +30,7 @@ import type {
   CreateTimerSessionRequest,
   ErrorResponse,
   GetApiV1ExampleDb200,
+  GetApiV1TimersParams,
   GetApiV1TimersIdStatsParams,
   MeResponse,
   PostApiV1TimerCategories201,
@@ -633,97 +634,104 @@ export type getApiV1TimersResponseError = (getApiV1TimersResponse401) & {
 
 export type getApiV1TimersResponse = (getApiV1TimersResponseSuccess | getApiV1TimersResponseError)
 
-export const getGetApiV1TimersUrl = () => {
-
-
-  
-
-  return `/api/v1/timers`
-}
-
-export const getApiV1Timers = async ( options?: RequestInit): Promise<getApiV1TimersResponse> => {
-  
-  return customFetch<getApiV1TimersResponse>(getGetApiV1TimersUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-
-
-export const getGetApiV1TimersQueryKey = () => {
-    return [
-    `/api/v1/timers`
-    ] as const;
+export const getGetApiV1TimersUrl = (params?: GetApiV1TimersParams) => {
+  const normalizedParams = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
+  });
+  const stringifiedParams = normalizedParams.toString();
+  return stringifiedParams.length > 0
+    ? `/api/v1/timers?${stringifiedParams}`
+    : `/api/v1/timers`;
+};
 
-    
-export const getGetApiV1TimersQueryOptions = <TData = Awaited<ReturnType<typeof getApiV1Timers>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1Timers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getApiV1Timers = async (
+  params?: GetApiV1TimersParams,
+  options?: RequestInit
+): Promise<getApiV1TimersResponse> => {
+  return customFetch<getApiV1TimersResponse>(getGetApiV1TimersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+
+
+
+
+export const getGetApiV1TimersQueryKey = (params?: GetApiV1TimersParams) => {
+  return ["/api/v1/timers", ...(params ? [params] : [])] as const;
+};
+
+export const getGetApiV1TimersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getApiV1Timers>>,
+  TError = ErrorResponse
+>(
+  params?: GetApiV1TimersParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof getApiV1Timers>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  }
 ) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getGetApiV1TimersQueryKey();
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getApiV1Timers>>> = ({ signal }) => getApiV1Timers({ signal, ...requestOptions });
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetApiV1TimersQueryKey(params);
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getApiV1Timers>>
+  > = ({ signal }) => getApiV1Timers(params, { signal, ...requestOptions });
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApiV1Timers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
+  return {
+    queryKey,
+    queryFn,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getApiV1Timers>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 
-export type GetApiV1TimersQueryResult = NonNullable<Awaited<ReturnType<typeof getApiV1Timers>>>
-export type GetApiV1TimersQueryError = ErrorResponse
+export type GetApiV1TimersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getApiV1Timers>>
+>;
+export type GetApiV1TimersQueryError = ErrorResponse;
 
-
-export function useGetApiV1Timers<TData = Awaited<ReturnType<typeof getApiV1Timers>>, TError = ErrorResponse>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1Timers>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiV1Timers>>,
-          TError,
-          Awaited<ReturnType<typeof getApiV1Timers>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiV1Timers<TData = Awaited<ReturnType<typeof getApiV1Timers>>, TError = ErrorResponse>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1Timers>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getApiV1Timers>>,
-          TError,
-          Awaited<ReturnType<typeof getApiV1Timers>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetApiV1Timers<TData = Awaited<ReturnType<typeof getApiV1Timers>>, TError = ErrorResponse>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1Timers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-/**
- * @summary List timers
- */
-
-export function useGetApiV1Timers<TData = Awaited<ReturnType<typeof getApiV1Timers>>, TError = ErrorResponse>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApiV1Timers>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getGetApiV1TimersQueryOptions(options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey ;
-
+export function useGetApiV1Timers<
+  TData = Awaited<ReturnType<typeof getApiV1Timers>>,
+  TError = ErrorResponse
+>(
+  params?: GetApiV1TimersParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof getApiV1Timers>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getGetApiV1TimersQueryOptions(params, options);
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+  query.queryKey = queryOptions.queryKey;
   return query;
 }
 

@@ -13,15 +13,41 @@ async function getValidTimerTypeKeys(): Promise<Set<string>> {
   return new Set(rows.map((r: { key: string }) => r.key));
 }
 
+function parseDateOnly(dateStr: string, tz: string): { start: DateTime; end: DateTime } | null {
+  const parsed = DateTime.fromISO(dateStr, { zone: tz });
+  if (!parsed.isValid || dateStr.length !== 10 || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return null;
+  }
+  return {
+    start: parsed.startOf("day"),
+    end: parsed.endOf("day"),
+  };
+}
+
 async function calculateTotalTimerSessionTime(
   timerId: string,
   userId: string,
-  timezone: string | null
+  timezone: string | null,
+  dateParam?: string | null
 ): Promise<number> {
   const tz = timezone || "UTC";
-  const now = DateTime.now().setZone(tz);
-  const startOfDay = now.startOf("day");
-  const endOfDay = now.endOf("day");
+  let startOfDay: DateTime;
+  let endOfDay: DateTime;
+  if (dateParam) {
+    const range = parseDateOnly(dateParam, tz);
+    if (!range) {
+      const now = DateTime.now().setZone(tz);
+      startOfDay = now.startOf("day");
+      endOfDay = now.endOf("day");
+    } else {
+      startOfDay = range.start;
+      endOfDay = range.end;
+    }
+  } else {
+    const now = DateTime.now().setZone(tz);
+    startOfDay = now.startOf("day");
+    endOfDay = now.endOf("day");
+  }
 
   const sessions = await db
     .selectFrom("timer_session")
@@ -67,7 +93,7 @@ async function getInProgressTimerSession(
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json(
@@ -90,6 +116,10 @@ export async function GET() {
     .where("id", "=", user.id)
     .where("is_deleted", "=", false)
     .executeTakeFirst();
+
+  const tz = userRecord?.timezone || "UTC";
+  const url = new URL(request.url);
+  const dateParam = url.searchParams.get("date");
 
   const timers = await db
     .selectFrom("timer")
@@ -149,12 +179,15 @@ export async function GET() {
       const totalTime = await calculateTotalTimerSessionTime(
         timer.id,
         user.id,
-        userRecord?.timezone || null
+        userRecord?.timezone || null,
+        dateParam || undefined
       );
-      const timer_session_in_progress = await getInProgressTimerSession(
-        timer.id,
-        user.id
-      );
+      const isToday =
+        !dateParam ||
+        DateTime.now().setZone(tz).toFormat("yyyy-MM-dd") === dateParam;
+      const timer_session_in_progress = isToday
+        ? await getInProgressTimerSession(timer.id, user.id)
+        : null;
       return {
         ...timer,
         total_timer_session_time: totalTime,

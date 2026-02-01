@@ -243,9 +243,17 @@ registry.registerPath({
   method: "get",
   path: "/api/v1/timers",
   summary: "List timers",
-  description: "List current user's timers (non-deleted)",
+  description: "List current user's timers (non-deleted). Optionally pass date (YYYY-MM-DD) to get session totals for that day; omit for today.",
   tags: ["Timer"],
   security: [{ bearerAuth: [] }],
+  request: {
+    query: z.object({
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().openapi({
+        example: "2025-02-01",
+        description: "Date in YYYY-MM-DD format. When provided, total_timer_session_time is computed for that day. Omit for today.",
+      }),
+    }),
+  },
   responses: {
     200: {
       description: "List of timers",

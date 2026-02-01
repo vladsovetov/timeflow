@@ -29,6 +29,8 @@ interface TimerProps {
   timer: TimerModel;
   onStart?: () => void;
   onPause?: () => void;
+  /** When true, hide start/stop buttons (e.g. when viewing past/future days). Card remains tappable to open. */
+  readOnly?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -46,6 +48,7 @@ export function Timer({
   timer,
   onStart,
   onPause,
+  readOnly = false,
 }: TimerProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -178,35 +181,37 @@ export function Timer({
         )}
       </View>
 
-      <View className="ml-2 flex-row items-center gap-2">
-        {isRunning ? (
-          <TouchableOpacity
-            onPress={handlePause}
-            disabled={isBusy}
-            className="w-14 h-14 rounded-full items-center justify-center"
-            style={{ backgroundColor: accentColor }}
-          >
-            {isPatching ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Ionicons name="pause" size={30} color="#ffffff" />
-            )}
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            onPress={handleStart}
-            disabled={isBusy}
-            className="w-14 h-14 rounded-full items-center justify-center"
-            style={{ backgroundColor: accentColor }}
-          >
-            {isCreating ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Ionicons name="play" size={30} color="#ffffff" />
-            )}
-          </TouchableOpacity>
-        )}
-      </View>
+      {!readOnly && (
+        <View className="ml-2 flex-row items-center gap-2">
+          {isRunning ? (
+            <TouchableOpacity
+              onPress={handlePause}
+              disabled={isBusy}
+              className="w-14 h-14 rounded-full items-center justify-center"
+              style={{ backgroundColor: accentColor }}
+            >
+              {isPatching ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Ionicons name="pause" size={30} color="#ffffff" />
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={handleStart}
+              disabled={isBusy}
+              className="w-14 h-14 rounded-full items-center justify-center"
+              style={{ backgroundColor: accentColor }}
+            >
+              {isCreating ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Ionicons name="play" size={30} color="#ffffff" />
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
