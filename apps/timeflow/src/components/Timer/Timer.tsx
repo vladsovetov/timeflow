@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { useEffect, useState, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -10,6 +10,7 @@ import {
   type Timer as TimerModel,
 } from "@acme/api-client";
 import { parseDateTime, now } from "@/src/lib/date";
+import { syncQueueTimerSessions } from "@/src/lib/sync-queue-timer-sessions";
 
 const TIMER_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   work: "briefcase",
@@ -25,10 +26,14 @@ const TIMER_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   other: "ellipsis-horizontal",
 };
 
+const TEMP_SESSION_PREFIX = "temp-";
+
 interface TimerProps {
   timer: TimerModel;
   onStart?: () => void;
   onPause?: () => void;
+  /** Query key for timers list (required for optimistic cache updates). */
+  timersQueryKey?: readonly unknown[];
   /** When true, hide start/stop buttons (e.g. when viewing past/future days). Card remains tappable to open. */
   readOnly?: boolean;
 }
@@ -44,15 +49,20 @@ function formatTime(seconds: number): string {
   return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 
+function isTempSessionId(id: string | null): boolean {
+  return id != null && id.startsWith(TEMP_SESSION_PREFIX);
+}
+
 export function Timer({
   timer,
   onStart,
   onPause,
+  timersQueryKey,
   readOnly = false,
 }: TimerProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  
+
   const inProgress = timer.timer_session_in_progress;
   const isRunning = inProgress !== null;
   const sessionId = inProgress?.id ?? null;
@@ -68,10 +78,6 @@ export function Timer({
 
   const createMutation = usePostApiV1TimerSessions();
   const patchMutation = usePatchApiV1TimerSessionsId();
-
-  const isCreating = createMutation.isPending;
-  const isPatching = patchMutation.isPending;
-  const isBusy = isCreating || isPatching;
 
   useEffect(() => {
     const base = timer.total_timer_session_time;
@@ -100,42 +106,134 @@ export function Timer({
     };
   }, [isRunning]);
 
-  async function handleStart() {
+  type TimerWithNullableSession = Omit<TimerModel, "timer_session_in_progress"> & {
+    timer_session_in_progress: TimerModel["timer_session_in_progress"] | null;
+  };
+
+  function updateTimersCache(updater: (timers: TimerModel[]) => TimerWithNullableSession[]) {
+    if (!timersQueryKey) return;
+    queryClient.setQueryData(timersQueryKey, (old: { data: { data: TimerModel[] } } | undefined) => {
+      if (!old?.data?.data) return old;
+      const updated = updater(old.data.data);
+      return {
+        ...old,
+        data: {
+          ...old.data,
+          data: updated,
+        },
+      };
+    });
+  }
+
+  function handleStart() {
     const timerId = timer.id;
-    if (isBusy || timerId == null || timerId === "") return;
-    try {
-      const res = await createMutation.mutateAsync({
+    if (timerId == null || timerId === "") return;
+
+    const startedAt = now().toISO() ?? "";
+    const tempId = `${TEMP_SESSION_PREFIX}${Date.now()}`;
+
+    if (timersQueryKey) {
+      updateTimersCache((timers) =>
+        timers.map((t) => {
+          if (t.id === timerId) {
+            return {
+              ...t,
+              timer_session_in_progress: { id: tempId, started_at: startedAt },
+            };
+          }
+          return {
+            ...t,
+            timer_session_in_progress: null,
+          };
+        })
+      );
+      onStart?.();
+    }
+
+    createMutation.mutate(
+      {
         data: {
           timer_id: timerId,
-          started_at: now().toISO() ?? undefined,
+          started_at: startedAt,
         },
-      });
-      if (res.status === 201) {
-        await queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
-        onStart?.();
+      },
+      {
+        onSuccess: (res) => {
+          if (res.status === 201) {
+            queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+          }
+        },
+        onError: () => {
+          syncQueueTimerSessions.enqueueCreateSession({
+            timerId,
+            startedAt,
+            endedAt: null,
+          });
+        },
+        onSettled: () => {
+          queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+        },
       }
-    } catch {
-      // Create failed – don't start
-    }
+    );
   }
 
   async function handlePause() {
     const sid = sessionId;
-    if (isBusy || sid == null || sid === "") return;
-    try {
-      await patchMutation.mutateAsync({
-        id: sid,
-        data: { ended_at: now().toISO()! },
-      });
-      await queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
-      onPause?.();
-    } catch {
+    if (sid == null || sid === "") return;
+
+    const endedAt = now().toISO() ?? "";
+
+    if (timersQueryKey) {
+      const elapsed = inProgress
+        ? Math.floor(now().diff(parseDateTime(inProgress.started_at), "seconds").seconds)
+        : 0;
+
+      updateTimersCache((timers) =>
+        timers.map((t) => {
+          if (t.id === timer.id) {
+            return {
+              ...t,
+              timer_session_in_progress: null,
+              total_timer_session_time: t.total_timer_session_time + elapsed,
+            };
+          }
+          return t;
+        })
+      );
       onPause?.();
     }
-  }
 
-  function handleNavigateToSessions() {
-    router.push(`/(root)/timers/${timer.id}/sessions`);
+    if (isTempSessionId(sid)) {
+      const merged = await syncQueueTimerSessions.updateCreateSessionWithEndedAt(timer.id, endedAt);
+      if (merged) return; // Merged into pending CreateSession; no PATCH needed
+      syncQueueTimerSessions.enqueueCreateSession({
+        timerId: timer.id,
+        startedAt: inProgress?.started_at ?? endedAt,
+        endedAt,
+      });
+      return;
+    }
+
+    patchMutation.mutate(
+      {
+        id: sid,
+        data: { ended_at: endedAt },
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+        },
+        onError: () => {
+          syncQueueTimerSessions.enqueueEndSession({
+            sessionId: sid,
+            endedAt,
+          });
+        },
+        onSettled: () => {
+          queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+        },
+      }
+    );
   }
 
   const iconName = TIMER_TYPE_ICONS[timer.timer_type] || TIMER_TYPE_ICONS.other;
@@ -186,28 +284,18 @@ export function Timer({
           {isRunning ? (
             <TouchableOpacity
               onPress={handlePause}
-              disabled={isBusy}
               className="w-14 h-14 rounded-full items-center justify-center"
               style={{ backgroundColor: accentColor }}
             >
-              {isPatching ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <Ionicons name="pause" size={30} color="#ffffff" />
-              )}
+              <Ionicons name="pause" size={30} color="#ffffff" />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
               onPress={handleStart}
-              disabled={isBusy}
               className="w-14 h-14 rounded-full items-center justify-center"
               style={{ backgroundColor: accentColor }}
             >
-              {isCreating ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <Ionicons name="play" size={30} color="#ffffff" />
-              )}
+              <Ionicons name="play" size={30} color="#ffffff" />
             </TouchableOpacity>
           )}
         </View>

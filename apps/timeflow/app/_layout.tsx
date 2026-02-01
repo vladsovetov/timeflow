@@ -1,20 +1,29 @@
 import "../global.css";
-import { useEffect } from "react";
 import { Slot } from "expo-router";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/clerk-expo";
 import { configureApiClient } from "@acme/api-client";
 import * as SecureStore from "expo-secure-store";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SyncProvider } from "@/src/contexts/SyncContext";
 
-// Create a QueryClient instance
+const ONE_MONTH_MS = 1000 * 60 * 60 * 24 * 30;
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 2,
       staleTime: 1000 * 60, // 1 minute
+      gcTime: ONE_MONTH_MS,
     },
   },
+});
+
+const asyncStoragePersister = createAsyncStoragePersister({
+  storage: AsyncStorage,
 });
 
 // Token cache for Clerk using SecureStore
@@ -69,18 +78,26 @@ function ApiClientConfigurator({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister: asyncStoragePersister,
+          maxAge: ONE_MONTH_MS,
+        }}
+      >
         <ClerkProvider
           publishableKey={clerkPublishableKey ?? ""}
           tokenCache={tokenCache}
         >
           <ClerkLoaded>
             <ApiClientConfigurator>
-              <Slot />
+              <SyncProvider>
+                <Slot />
+              </SyncProvider>
             </ApiClientConfigurator>
           </ClerkLoaded>
         </ClerkProvider>
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </GestureHandlerRootView>
   );
 }

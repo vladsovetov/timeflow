@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { View, Text, ActivityIndicator, Pressable } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { scheduleOnRN } from "react-native-worklets";
@@ -9,7 +9,7 @@ import DraggableFlatList, {
   type RenderItemParams,
 } from "react-native-draggable-flatlist";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import {
   getApiV1Timers,
   usePatchApiV1TimersReorder,
@@ -45,9 +45,11 @@ export default function TimersScreen() {
   );
   const isToday = selectedDate.hasSame(now(), "day");
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: getGetApiV1TimersQueryKey({ date: dateParam }),
+  const timersQueryKey = getGetApiV1TimersQueryKey({ date: dateParam });
+  const { data, isLoading, error, refetch, dataUpdatedAt } = useQuery({
+    queryKey: timersQueryKey,
     queryFn: () => getApiV1Timers({ date: dateParam }),
+    placeholderData: keepPreviousData,
   });
 
   const reorderMutation = usePatchApiV1TimersReorder();
@@ -89,7 +91,11 @@ export default function TimersScreen() {
     [goToPrevDay, goToNextDay]
   );
 
-  if (isLoading) {
+  const hasCachedData = data != null && dataUpdatedAt > 0;
+  const showFullscreenLoading = isLoading && !hasCachedData;
+  const showFullscreenError = error != null && !hasCachedData;
+
+  if (showFullscreenLoading) {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center">
         <ActivityIndicator size="large" color="#7C3AED" />
@@ -98,7 +104,7 @@ export default function TimersScreen() {
     );
   }
 
-  if (error) {
+  if (showFullscreenError) {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center px-6">
         <Text className="text-tf-error text-center mb-4">
@@ -145,8 +151,7 @@ export default function TimersScreen() {
           <View className="flex-1">
             <Timer
               timer={item}
-              onStart={() => {}}
-              onPause={() => {}}
+              timersQueryKey={timersQueryKey}
               readOnly={!isToday}
             />
           </View>
