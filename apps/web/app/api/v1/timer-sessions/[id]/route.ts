@@ -1,7 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { db } from "@/db";
+import { db, sql } from "@/db";
 import { getOrCreateUser } from "@/lib/user";
+import { splitSessionAtMidnight } from "@/lib/split-session-at-midnight";
 import type { ErrorResponse } from "@acme/api";
 
 export async function GET(
@@ -121,6 +122,80 @@ export async function PATCH(
         { status: 400 }
       );
     }
+
+    const userRecord = await db
+      .selectFrom("user")
+      .select(["timezone"])
+      .where("id", "=", user.id)
+      .where("is_deleted", "=", false)
+      .executeTakeFirst();
+    const tz = userRecord?.timezone || "UTC";
+
+    const segments = splitSessionAtMidnight(
+      session.started_at,
+      endedAtDate,
+      tz
+    );
+
+    if (segments.length > 1) {
+      const firstSeg = segments[0];
+      if (!firstSeg) {
+        return NextResponse.json(
+          { error: "Failed to split session" } satisfies ErrorResponse,
+          { status: 500 }
+        );
+      }
+      const [updated] = await db.transaction().execute(async (trx) => {
+        const updatePayload: {
+          ended_at: Date;
+          updated_at: Date;
+          updated_by: string;
+          original_ended_at?: Date;
+        } = {
+          ended_at: firstSeg.ended_at,
+          updated_at: new Date(),
+          updated_by: user.id,
+        };
+        if (session.original_ended_at === null) {
+          updatePayload.original_ended_at = endedAtDate;
+        }
+        await trx
+          .updateTable("timer_session")
+          .set(updatePayload)
+          .where("id", "=", id)
+          .where("user_id", "=", user.id)
+          .where("is_deleted", "=", false)
+          .execute();
+
+        const sourceVal = session.source || "manual";
+        const noteVal = session.note ?? null;
+        const updatedBy = session.updated_by ?? user.id;
+
+        let lastInserted: Record<string, unknown> | null = null;
+        for (let i = 1; i < segments.length; i++) {
+          const seg = segments[i];
+          if (!seg) continue;
+          const result = await sql`
+            INSERT INTO timer_session (user_id, timer_id, started_at, ended_at, source, note, updated_by)
+            VALUES (${user.id}, ${session.timer_id}, ${seg.started_at}, ${seg.ended_at}, ${sourceVal}, ${noteVal}, ${updatedBy})
+            RETURNING *
+          `.execute(trx);
+          const row = result.rows[0];
+          if (row && typeof row === "object" && !Array.isArray(row))
+            lastInserted = { ...row };
+        }
+        return lastInserted ? [lastInserted] : [];
+      });
+
+      if (!updated) {
+        return NextResponse.json(
+          { error: "Failed to update timer session" } satisfies ErrorResponse,
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({ data: updated });
+    }
+
     const updatePayload: {
       ended_at: Date;
       updated_at: Date;

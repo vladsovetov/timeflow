@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { View, Text, ActivityIndicator, Pressable, RefreshControl } from "react-native";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { scheduleOnRN } from "react-native-worklets";
@@ -104,6 +104,22 @@ export default function TimersScreen() {
     setRefreshing(false);
   }, [refetch]);
 
+  const lastKnownDateRef = useRef(now(zone).toFormat("yyyy-MM-dd"));
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentDateStr = now(zone).toFormat("yyyy-MM-dd");
+      const lastKnown = lastKnownDateRef.current;
+      if (currentDateStr !== lastKnown) {
+        lastKnownDateRef.current = currentDateStr;
+        if (selectedDate.toFormat("yyyy-MM-dd") === lastKnown) {
+          setSelectedDate(now(zone).startOf("day"));
+          refetch();
+        }
+      }
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [zone, selectedDate, refetch]);
+
   if (showFullscreenLoading) {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center">
@@ -142,6 +158,11 @@ export default function TimersScreen() {
       setTimers(timersFromApi);
     }
   }
+
+  const activeTimer = useMemo(
+    () => timers.find((t) => t.timer_session_in_progress != null) ?? null,
+    [timers]
+  );
 
   function renderItem({ item, drag, isActive }: RenderItemParams<TimerModel>) {
     return (
@@ -234,6 +255,15 @@ export default function TimersScreen() {
             }
           />
           <View className="px-6 pb-6">
+            {activeTimer != null && (
+              <View className="mb-3">
+                <Timer
+                  timer={activeTimer}
+                  timersQueryKey={timersQueryKey}
+                  readOnly={!isToday}
+                />
+              </View>
+            )}
             <Button
               variant="primary"
               onPress={() => router.push("/(root)/timers/create")}
