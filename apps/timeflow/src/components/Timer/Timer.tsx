@@ -264,7 +264,7 @@ export function Timer({
   return (
     <TouchableOpacity
       onPress={handleCardPress}
-      className="rounded-xl p-4 flex-row items-center bg-tf-bg-secondary"
+      className="rounded-xl p-2 flex-row items-center bg-tf-bg-secondary"
       style={{
         borderWidth: 2,
         borderColor: accentColor,
@@ -276,23 +276,25 @@ export function Timer({
       </View>
 
       <View className="flex-1">
-        <Text className="text-base font-semibold text-tf-text-primary" numberOfLines={1}>
-          {timer.name}
-        </Text>
-        {timer.category != null && timer.category.color != null && timer.category.color !== "" && (
-          <View
-            className="self-start px-2 py-0.5 rounded-md mt-1"
-            style={{ backgroundColor: timer.category.color }}
-          >
-            <Text
-              className="text-xs font-medium"
-              style={{ color: getContrastTextColor(timer.category.color) }}
-              numberOfLines={1}
+        <View className="flex-row items-center gap-2 flex-wrap">
+          <Text className="text-base font-semibold text-tf-text-primary" numberOfLines={1}>
+            {timer.name}
+          </Text>
+          {timer.category != null && timer.category.color != null && timer.category.color !== "" && (
+            <View
+              className="px-2 py-0.5 rounded-md"
+              style={{ backgroundColor: timer.category.color }}
             >
-              {timer.category.name}
-            </Text>
-          </View>
-        )}
+              <Text
+                className="text-xs font-medium"
+                style={{ color: getContrastTextColor(timer.category.color) }}
+                numberOfLines={1}
+              >
+                {timer.category.name}
+              </Text>
+            </View>
+          )}
+        </View>
         <Text className="text-2xl font-mono font-semibold text-tf-text-primary mt-1">
           {formatTime(time)}
         </Text>
