@@ -28,8 +28,9 @@ import type { Timer, TimerSession } from "@acme/api-client";
 import { DateTime } from "luxon";
 import { PieChart } from "react-native-gifted-charts";
 import { useUserTimezone } from "@/src/contexts/AppContext";
-import { parseDateTime, now } from "@/src/lib/date";
 import { useTranslation } from "@/src/i18n";
+import { getCategoryDisplayName } from "@/src/lib/category";
+import { parseDateTime, now } from "@/src/lib/date";
 import { DateNavigator } from "@/src/components/DateNavigator/DateNavigator";
 
 const SWIPE_THRESHOLD = 60;
@@ -301,7 +302,12 @@ export default function StatsScreen() {
         seen.add(key);
         const color =
           s.timer.category?.color ?? s.timer.color ?? "#7C3AED";
-        items.push({ key, label: key, color });
+        const label = getCategoryDisplayName(
+          s.timer.category,
+          t,
+          s.timer.name ?? t("other")
+        );
+        items.push({ key, label, color });
       }
       items.sort((a, b) => a.label.localeCompare(b.label));
     } else {
@@ -360,8 +366,13 @@ export default function StatsScreen() {
       if (seconds <= 0) continue;
       const pct = (seconds / awakeSeconds) * 100;
       sessionTotal += pct;
+      const firstSession = sessions[0];
       const displayLabel = groupByCategory
-        ? label
+        ? getCategoryDisplayName(
+            firstSession?.timer.category,
+            t,
+            firstSession?.timer.name ?? t("other")
+          )
         : label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
       data.push({
         value: pct,

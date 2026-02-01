@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { CreateTimerRequest, UpdateTimerRequest } from "@acme/api-client";
 import * as SecureStore from "expo-secure-store";
 import { useTranslation } from "@/src/i18n";
+import { getCategoryDisplayName } from "@/src/lib/category";
 
 function getTimerTypes(t: (key: string) => string) {
   return [
@@ -166,7 +167,7 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
                           <Text
                             className={isSelected ? "text-white font-medium" : "text-tf-text-secondary"}
                           >
-                            {cat.name}
+                            {getCategoryDisplayName(cat, t, cat.name)}
                           </Text>
                         </TouchableOpacity>
                       );

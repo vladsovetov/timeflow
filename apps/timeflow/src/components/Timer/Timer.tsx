@@ -11,6 +11,8 @@ import {
   type Timer as TimerModel,
 } from "@acme/api-client";
 import { useUserTimezone } from "@/src/contexts/AppContext";
+import { useTranslation } from "@/src/i18n";
+import { getCategoryDisplayName } from "@/src/lib/category";
 import { parseDateTime, now } from "@/src/lib/date";
 import { syncQueueTimerSessions } from "@/src/lib/sync-queue-timer-sessions";
 
@@ -78,6 +80,7 @@ export function Timer({
   const router = useRouter();
   const queryClient = useQueryClient();
   const zone = useUserTimezone();
+  const { t } = useTranslation();
 
   const inProgress = timer.timer_session_in_progress;
   const isRunning = inProgress !== null;
@@ -293,7 +296,7 @@ export function Timer({
                 style={{ color: getContrastTextColor(timer.category.color) }}
                 numberOfLines={1}
               >
-                {timer.category.name}
+                {getCategoryDisplayName(timer.category, t, timer.category.name)}
               </Text>
             </View>
           )}
