@@ -5,8 +5,10 @@ import {
   ActivityIndicator,
   RefreshControl,
   ScrollView,
+  TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { scheduleOnRN } from "react-native-worklets";
@@ -184,21 +186,12 @@ export default function TimersScreen() {
   const fixedFooter = (
     <View className="px-6 pb-6 pt-4 bg-tf-bg-primary border-t border-tf-bg-secondary">
       {activeTimer != null && (
-        <View className="mb-3">
-          <Timer
-            timer={activeTimer}
-            timersQueryKey={timersQueryKey}
-            readOnly={!isToday}
-          />
-        </View>
+        <Timer
+          timer={activeTimer}
+          timersQueryKey={timersQueryKey}
+          readOnly={!isToday}
+        />
       )}
-      <Button
-        variant="primary"
-        onPress={() => router.push("/(root)/timers/create")}
-        className="w-full mb-3"
-      >
-        {t("createTimer")}
-      </Button>
     </View>
   );
 
@@ -206,9 +199,18 @@ export default function TimersScreen() {
     <GestureDetector gesture={panGesture}>
       <View className="flex-1 bg-tf-bg-primary">
         <View className="px-6 pt-16 pb-4 bg-tf-bg-primary">
-          <Text className="text-3xl font-bold text-tf-text-primary mb-2">
-            {t("timers")}
-          </Text>
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-3xl font-bold text-tf-text-primary">
+              {t("timers")}
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push("/(root)/timers/create")}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              className="p-2 rounded-full bg-tf-bg-secondary active:opacity-80"
+            >
+              <Ionicons name="add" size={24} color="#7C3AED" />
+            </TouchableOpacity>
+          </View>
           <DateNavigator
             value={selectedDate}
             onChange={setSelectedDate}
@@ -222,15 +224,9 @@ export default function TimersScreen() {
               className="flex-1"
               contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: 24 }}
             >
-              <Text className="text-tf-text-secondary text-center mb-6">
+              <Text className="text-tf-text-secondary text-center">
                 {t("noTimersYet")}
               </Text>
-              <Button
-                variant="primary"
-                onPress={() => router.push("/(root)/timers/create")}
-              >
-                {t("createTimer")}
-              </Button>
             </ScrollView>
           </View>
         ) : (
