@@ -53,7 +53,6 @@ export const CreateTimerRequestSchema = z
     category_id: z.string().uuid().optional().openapi({ example: "550e8400-e29b-41d4-a716-446655440002", description: "Timer category ID (Useful, Important, Procrastination, or custom)" }),
     name: z.string().min(1).openapi({ example: "Deep work" }),
     color: z.string().optional().openapi({ example: "#3b82f6" }),
-    sort_order: z.number().optional().openapi({ example: 0 }),
     min_time: z.number().optional().openapi({ example: 300, description: "Minimum session duration in seconds" }),
     is_archived: z.boolean().optional().openapi({ example: false }),
   })
@@ -63,7 +62,6 @@ export const UpdateTimerRequestSchema = z
   .object({
     name: z.string().min(1).optional().openapi({ example: "Deep work" }),
     color: z.string().optional().openapi({ example: "#3b82f6" }),
-    sort_order: z.number().optional().openapi({ example: 0 }),
     min_time: z.number().nullable().optional().openapi({ example: 300, description: "Minimum session duration in seconds" }),
     is_archived: z.boolean().optional().openapi({ example: false }),
     timer_type: z.string().min(1).optional().openapi({ example: "focus" }),

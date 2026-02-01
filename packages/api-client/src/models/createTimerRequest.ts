@@ -13,8 +13,9 @@ export interface CreateTimerRequest {
   category_id?: string;
   /** @minLength 1 */
   name: string;
+  /** Ionicons icon name */
+  icon?: string;
   color?: string;
-  sort_order?: number;
   /** Minimum session duration in seconds */
   min_time?: number;
   is_archived?: boolean;

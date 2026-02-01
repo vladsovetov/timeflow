@@ -16,6 +16,8 @@ export default {
 
   // Dates
   today: "Today",
+  selectDay: "Select day",
+  done: "Done",
   yesterday: "Yesterday",
   tomorrow: "Tomorrow",
 
@@ -85,6 +87,7 @@ export default {
   name: "Name",
   nameRequired: "Name is required",
   enterTimerName: "Enter timer name",
+  icon: "Icon",
   color: "Color",
   sortOrder: "Sort Order",
   minTimeMinutes: "Min time (minutes)",

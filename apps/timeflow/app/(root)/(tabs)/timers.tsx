@@ -1,5 +1,12 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { View, Text, ActivityIndicator, Pressable, RefreshControl, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -20,8 +27,9 @@ import { Button } from "@/src/components/Button/Button";
 import { Timer } from "@/src/components/Timer/Timer";
 import type { Timer as TimerModel } from "@acme/api-client";
 import { useUserTimezone } from "@/src/contexts/AppContext";
-import { now, formatDateLabel } from "@/src/lib/date";
+import { now } from "@/src/lib/date";
 import { useTranslation } from "@/src/i18n";
+import { DateNavigator } from "@/src/components/DateNavigator/DateNavigator";
 
 const SWIPE_THRESHOLD = 60;
 
@@ -29,7 +37,7 @@ export default function TimersScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const zone = useUserTimezone();
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState(() => now(zone).startOf("day"));
   const dateParam = useMemo(
     () => selectedDate.toFormat("yyyy-MM-dd"),
@@ -247,37 +255,11 @@ export default function TimersScreen() {
           <Text className="text-3xl font-bold text-tf-text-primary mb-2">
             {t("timers")}
           </Text>
-          <Text className="text-base text-tf-text-secondary mb-3">
-            {formatDateLabel(selectedDate, zone, t, locale)}
-          </Text>
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={goToPrevDay}
-              className="flex-1 py-2 rounded-lg items-center justify-center bg-tf-bg-secondary"
-            >
-              <Ionicons name="chevron-back" size={24} color="#C7C9E3" />
-            </Pressable>
-            <Pressable
-              onPress={goToToday}
-              className={`flex-1 py-2 rounded-lg items-center justify-center ${
-                isToday ? "bg-tf-purple" : "bg-tf-bg-secondary"
-              }`}
-            >
-              <Text
-                className={`font-medium ${
-                  isToday ? "text-white" : "text-tf-text-secondary"
-                }`}
-              >
-                {t("today")}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={goToNextDay}
-              className="flex-1 py-2 rounded-lg items-center justify-center bg-tf-bg-secondary"
-            >
-              <Ionicons name="chevron-forward" size={24} color="#C7C9E3" />
-            </Pressable>
-          </View>
+          <DateNavigator
+            value={selectedDate}
+            onChange={setSelectedDate}
+            zone={zone}
+          />
         </View>
 
         {timers.length === 0 ? (

@@ -1791,11 +1791,16 @@ export type patchApiV1TimerSessionsIdResponse404 = {
   data: ErrorResponse
   status: 404
 }
+
+export type patchApiV1TimerSessionsIdResponse409 = {
+  data: ErrorResponse
+  status: 409
+}
     
 export type patchApiV1TimerSessionsIdResponseSuccess = (patchApiV1TimerSessionsIdResponse200) & {
   headers: Headers;
 };
-export type patchApiV1TimerSessionsIdResponseError = (patchApiV1TimerSessionsIdResponse400 | patchApiV1TimerSessionsIdResponse401 | patchApiV1TimerSessionsIdResponse404) & {
+export type patchApiV1TimerSessionsIdResponseError = (patchApiV1TimerSessionsIdResponse400 | patchApiV1TimerSessionsIdResponse401 | patchApiV1TimerSessionsIdResponse404 | patchApiV1TimerSessionsIdResponse409) & {
   headers: Headers;
 };
 

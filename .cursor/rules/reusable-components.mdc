@@ -1,0 +1,21 @@
+---
+description: Prefer reusable components over duplicating similar UI/logic in multiple places
+alwaysApply: true
+---
+
+# Reusable components
+
+When you have **similar components or the same functionality** in different places (screens, pages, modules), **extract a reusable component** instead of duplicating the same UI and logic.
+
+## Rules
+
+- If two or more places render nearly the same UI or share the same behavior, create a single shared component and use it in both places.
+- Put reusable components under `src/components/` (or the app’s equivalent), with a clear, descriptive name.
+- Prefer a **controlled** API when the parent needs to own state: `value` + `onChange` (or equivalent) so the component is driven by the parent.
+- Keep the component focused: one responsibility, clear props, and minimal assumptions about where it’s used.
+
+## Example
+
+Instead of copying the same date navigation (prev/today/select day/next + picker) into Timers and Stats, use a shared `DateNavigator` with `value`, `onChange`, and `zone` props.
+
+Do not duplicate the same functionality in multiple files; extract it into a reusable component and reuse it.

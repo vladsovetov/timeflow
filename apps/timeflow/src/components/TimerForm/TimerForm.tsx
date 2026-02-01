@@ -37,7 +37,6 @@ function createTimerSchema(t: (key: string) => string) {
     category_id: yup.string().uuid(t("selectCategory")).required(t("categoryRequired")),
     name: yup.string().min(1, t("nameRequired")).required(),
     color: yup.string().optional(),
-    sort_order: yup.number().optional().default(0),
     min_time_minutes: yup.number().nullable().min(0).optional().transform((v) => (v === "" || v == null ? null : v)),
     is_archived: yup.boolean().optional().default(false),
   });
@@ -49,7 +48,6 @@ function updateTimerSchema() {
     category_id: yup.string().uuid().nullable().optional(),
     name: yup.string().min(1).optional(),
     color: yup.string().optional(),
-    sort_order: yup.number().optional(),
     min_time_minutes: yup.number().nullable().min(0).optional().transform((v) => (v === "" || v == null ? null : v)),
     is_archived: yup.boolean().optional(),
   });
@@ -120,50 +118,18 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
       <View className="px-6 py-6">
         <Controller
           control={control}
-          name="timer_type"
-          render={({ field: { onChange, value } }) => (
+          name="name"
+          render={({ field: { onChange, onBlur, value } }) => (
             <View className="mb-4">
-              <Text className="text-tf-text-primary text-sm mb-2">
-                {t("timerType")} *
-              </Text>
-              <View className="bg-tf-input-bg border border-tf-input-border rounded-xl">
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View className="flex-row p-2">
-                    {timerTypes.map((type) => (
-                      <TouchableOpacity
-                        key={type.key}
-                        onPress={() => onChange(type.key)}
-                        className={`px-4 py-2 rounded-lg mr-2 flex-row items-center ${
-                          value === type.key
-                            ? "bg-tf-purple"
-                            : "bg-tf-bg-secondary"
-                        }`}
-                      >
-                        <Ionicons
-                          name={type.icon}
-                          size={18}
-                          color={value === type.key ? "#ffffff" : "#8A8DB3"}
-                          style={{ marginRight: 6 }}
-                        />
-                        <Text
-                          className={`${
-                            value === type.key
-                              ? "text-white"
-                              : "text-tf-text-secondary"
-                          }`}
-                        >
-                          {type.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </ScrollView>
-              </View>
-              {errors.timer_type && (
-                <Text className="text-tf-error text-xs mt-1">
-                  {errors.timer_type.message}
-                </Text>
-              )}
+              <Text className="text-tf-text-primary text-sm mb-2">{t("name")} *</Text>
+              <TextInput
+                variant="default"
+                placeholder={t("enterTimerName")}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={errors.name?.message}
+              />
             </View>
           )}
         />
@@ -185,9 +151,8 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
                         <TouchableOpacity
                           key={cat.id}
                           onPress={() => onChange(cat.id)}
-                          className={`px-4 py-2 rounded-lg mr-2 flex-row items-center ${
-                            isSelected ? "" : "bg-tf-bg-secondary"
-                          }`}
+                          className={`px-4 py-2 rounded-lg mr-2 flex-row items-center ${isSelected ? "" : "bg-tf-bg-secondary"
+                            }`}
                           style={
                             isSelected
                               ? { backgroundColor: cat.color }
@@ -288,18 +253,37 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
 
         <Controller
           control={control}
-          name="name"
-          render={({ field: { onChange, onBlur, value } }) => (
+          name="timer_type"
+          render={({ field: { onChange, value } }) => (
             <View className="mb-4">
-              <Text className="text-tf-text-primary text-sm mb-2">{t("name")} *</Text>
-              <TextInput
-                variant="default"
-                placeholder={t("enterTimerName")}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                error={errors.name?.message}
-              />
+              <Text className="text-tf-text-primary text-sm mb-2">{t("icon")}</Text>
+              <View className="bg-tf-input-bg border border-tf-input-border rounded-xl">
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View className="flex-row p-2">
+                    {timerTypes.map((type) => (
+                      <TouchableOpacity
+                        key={type.key}
+                        onPress={() => onChange(type.key)}
+                        className={`w-10 h-10 rounded-lg mr-2 items-center justify-center ${value === type.key
+                            ? "bg-tf-purple"
+                            : "bg-tf-bg-secondary"
+                          }`}
+                      >
+                        <Ionicons
+                          name={type.icon}
+                          size={22}
+                          color={value === type.key ? "#ffffff" : "#8A8DB3"}
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+              {errors.timer_type && (
+                <Text className="text-tf-error text-xs mt-1">
+                  {errors.timer_type.message}
+                </Text>
+              )}
             </View>
           )}
         />
@@ -341,28 +325,7 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
           )}
         />
 
-        <Controller
-          control={control}
-          name="sort_order"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <View className="mb-4">
-              <Text className="text-tf-text-primary text-sm mb-2">
-                {t("sortOrder")}
-              </Text>
-              <TextInput
-                variant="default"
-                placeholder="0"
-                keyboardType="numeric"
-                value={value?.toString() ?? "0"}
-                onChangeText={(text) => {
-                  const num = parseInt(text, 10);
-                  onChange(isNaN(num) ? 0 : num);
-                }}
-                onBlur={onBlur}
-              />
-            </View>
-          )}
-        />
+
 
         <Controller
           control={control}
@@ -431,7 +394,6 @@ export function useTimerForm(
       category_id: defaultValues?.category_id ?? undefined,
       name: defaultValues?.name ?? "",
       color: defaultValues?.color ?? "",
-      sort_order: defaultValues?.sort_order ?? 0,
       min_time_minutes: defaultValues?.min_time_minutes ?? null,
       is_archived: defaultValues?.is_archived ?? false,
     },

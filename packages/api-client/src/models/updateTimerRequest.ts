@@ -10,7 +10,6 @@ export interface UpdateTimerRequest {
   /** @minLength 1 */
   name?: string;
   color?: string;
-  sort_order?: number;
   /**
    * Minimum session duration in seconds
    * @nullable

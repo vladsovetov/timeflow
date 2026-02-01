@@ -16,6 +16,8 @@ export default {
 
   // Dates
   today: "Сьогодні",
+  selectDay: "Обрати день",
+  done: "Готово",
   yesterday: "Вчора",
   tomorrow: "Завтра",
 
@@ -87,6 +89,7 @@ export default {
   name: "Назва",
   nameRequired: "Назва обов'язкова",
   enterTimerName: "Введіть назву таймера",
+  icon: "Іконка",
   color: "Колір",
   sortOrder: "Порядок сортування",
   minTimeMinutes: "Мін. час (хвилини)",

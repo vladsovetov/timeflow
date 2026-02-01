@@ -10,5 +10,6 @@ export interface UpdateProfileRequest {
   first_name?: string;
   last_name?: string;
   timezone?: string;
+  /** @nullable */
   language?: string | null;
 }

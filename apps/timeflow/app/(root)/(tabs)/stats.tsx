@@ -28,8 +28,9 @@ import type { Timer, TimerSession } from "@acme/api-client";
 import { DateTime } from "luxon";
 import { PieChart } from "react-native-gifted-charts";
 import { useUserTimezone } from "@/src/contexts/AppContext";
-import { parseDateTime, now, formatDateLabel } from "@/src/lib/date";
+import { parseDateTime, now } from "@/src/lib/date";
 import { useTranslation } from "@/src/i18n";
+import { DateNavigator } from "@/src/components/DateNavigator/DateNavigator";
 
 const SWIPE_THRESHOLD = 60;
 const SECONDS_PER_DAY = 24 * 60 * 60;
@@ -79,7 +80,7 @@ type SessionWithTimer = TimerSession & {
 
 export default function StatsScreen() {
   const zone = useUserTimezone();
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState(() =>
     now(zone).startOf("day")
   );
@@ -88,7 +89,6 @@ export default function StatsScreen() {
     () => selectedDate.toFormat("yyyy-MM-dd"),
     [selectedDate]
   );
-  const isToday = selectedDate.hasSame(now(zone), "day");
 
   const timersQueryKey = getGetApiV1TimersQueryKey({ date: dateParam });
   const { data: timersRes, isLoading: loadingTimers, refetch: refetchTimers } =
@@ -398,37 +398,11 @@ export default function StatsScreen() {
           <Text className="text-3xl font-bold text-tf-text-primary mb-2">
             {t("stats")}
           </Text>
-          <Text className="text-base text-tf-text-secondary mb-3">
-            {formatDateLabel(selectedDate, zone, t, locale)}
-          </Text>
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={goToPrevDay}
-              className="flex-1 py-2 rounded-lg items-center justify-center bg-tf-bg-secondary"
-            >
-              <Ionicons name="chevron-back" size={24} color="#C7C9E3" />
-            </Pressable>
-            <Pressable
-              onPress={goToToday}
-              className={`flex-1 py-2 rounded-lg items-center justify-center ${
-                isToday ? "bg-tf-purple" : "bg-tf-bg-secondary"
-              }`}
-            >
-              <Text
-                className={`font-medium ${
-                  isToday ? "text-white" : "text-tf-text-secondary"
-                }`}
-              >
-                {t("today")}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={goToNextDay}
-              className="flex-1 py-2 rounded-lg items-center justify-center bg-tf-bg-secondary"
-            >
-              <Ionicons name="chevron-forward" size={24} color="#C7C9E3" />
-            </Pressable>
-          </View>
+          <DateNavigator
+            value={selectedDate}
+            onChange={setSelectedDate}
+            zone={zone}
+          />
         </View>
 
         <ScrollView

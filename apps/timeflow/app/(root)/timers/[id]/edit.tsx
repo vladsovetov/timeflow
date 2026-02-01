@@ -36,7 +36,6 @@ export default function EditTimerScreen() {
         category_id: timer.category_id ?? undefined,
         name: timer.name,
         color: timer.color ?? undefined,
-        sort_order: timer.sort_order,
         min_time_minutes: timer.min_time != null ? Math.round(timer.min_time / 60) : null,
         is_archived: timer.is_archived,
       });
@@ -108,7 +107,6 @@ export default function EditTimerScreen() {
       category_id: data.category_id ?? undefined,
       name: data.name,
       color: data.color ?? undefined,
-      sort_order: data.sort_order,
       is_archived: data.is_archived,
       min_time:
         data.min_time_minutes != null && data.min_time_minutes > 0
