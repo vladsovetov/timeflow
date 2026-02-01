@@ -23,38 +23,52 @@ export function DateNavigator({ value, onChange, zone }: DateNavigatorProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const selectedDate = value.startOf("day");
-  const isToday = selectedDate.hasSame(now(zone), "day");
+  const todayStart = now(zone).startOf("day");
+  const isToday = selectedDate.hasSame(todayStart, "day");
+  const canGoNext = selectedDate < todayStart;
 
   const goToPrevDay = useCallback(
     () => onChange(selectedDate.minus({ days: 1 })),
     [selectedDate, onChange]
   );
-  const goToNextDay = useCallback(
-    () => onChange(selectedDate.plus({ days: 1 })),
-    [selectedDate, onChange]
-  );
+  const goToNextDay = useCallback(() => {
+    const nextDay = selectedDate.plus({ days: 1 });
+    if (nextDay <= todayStart) {
+      onChange(nextDay);
+    }
+  }, [selectedDate, todayStart, onChange]);
   const goToToday = useCallback(
     () => onChange(now(zone).startOf("day")),
     [zone, onChange]
+  );
+
+  const clampToToday = useCallback(
+    (dt: DateTime) => {
+      const dayStart = dt.startOf("day");
+      return dayStart > todayStart ? todayStart : dayStart;
+    },
+    [todayStart]
   );
 
   const onDatePickerChange = useCallback(
     (event: { type: string }, date: Date | undefined) => {
       if (Platform.OS === "android") setShowDatePicker(false);
       if (event.type === "set" && date) {
-        onChange(DateTime.fromJSDate(date, { zone }).startOf("day"));
+        const dt = DateTime.fromJSDate(date, { zone });
+        onChange(clampToToday(dt));
       }
     },
-    [zone, onChange]
+    [zone, onChange, clampToToday]
   );
 
   const onIOSDateChange = useCallback(
     (_event: unknown, date: Date | undefined) => {
       if (date) {
-        onChange(DateTime.fromJSDate(date, { zone }).startOf("day"));
+        const dt = DateTime.fromJSDate(date, { zone });
+        onChange(clampToToday(dt));
       }
     },
-    [zone, onChange]
+    [zone, onChange, clampToToday]
   );
 
   return (
@@ -93,16 +107,24 @@ export function DateNavigator({ value, onChange, zone }: DateNavigatorProps) {
         </Pressable>
         <Pressable
           onPress={goToNextDay}
-          className="flex-1 py-2 rounded-lg items-center justify-center bg-tf-bg-secondary"
+          disabled={!canGoNext}
+          className={`flex-1 py-2 rounded-lg items-center justify-center ${
+            canGoNext ? "bg-tf-bg-secondary" : "bg-tf-bg-secondary opacity-50"
+          }`}
         >
-          <Ionicons name="chevron-forward" size={24} color="#C7C9E3" />
+          <Ionicons
+            name="chevron-forward"
+            size={24}
+            color={canGoNext ? "#C7C9E3" : "#6B6D8A"}
+          />
         </Pressable>
       </View>
       {showDatePicker && Platform.OS === "android" && (
         <DateTimePicker
-          value={selectedDate.toJSDate()}
+          value={(selectedDate > todayStart ? todayStart : selectedDate).toJSDate()}
           mode="date"
           display="default"
+          maximumDate={todayStart.toJSDate()}
           onChange={onDatePickerChange}
         />
       )}
@@ -127,9 +149,10 @@ export function DateNavigator({ value, onChange, zone }: DateNavigatorProps) {
                 </Pressable>
               </View>
               <DateTimePicker
-                value={selectedDate.toJSDate()}
+                value={(selectedDate > todayStart ? todayStart : selectedDate).toJSDate()}
                 mode="date"
                 display="spinner"
+                maximumDate={todayStart.toJSDate()}
                 accentColor="#7C3AED"
                 themeVariant="dark"
                 onChange={onIOSDateChange}
