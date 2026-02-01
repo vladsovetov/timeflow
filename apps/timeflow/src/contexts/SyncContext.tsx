@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { AppState } from "react-native";
-import NetInfo from "@react-native-community/netinfo";
+import * as Network from "expo-network";
+import type { NetworkStateEvent } from "expo-network";
 import { useQueryClient } from "@tanstack/react-query";
 import { syncQueue } from "@/src/lib/sync-queue";
 import { isTimerSessionOp } from "@/src/lib/sync-queue-timer-sessions";
@@ -23,12 +24,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     const appSub = AppState.addEventListener("change", (status) => {
       if (status === "active") process();
     });
-    const netSub = NetInfo.addEventListener((state) => {
+    const netSub = Network.addNetworkStateListener((state: NetworkStateEvent) => {
       if (state.isConnected) process();
     });
     return () => {
       appSub.remove();
-      netSub();
+      netSub.remove();
     };
   }, []);
 
