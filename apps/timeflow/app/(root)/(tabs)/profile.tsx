@@ -4,8 +4,10 @@ import { useGetApiV1Me } from "@acme/api-client";
 import { useAuth } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { Button } from "@/src/components/Button/Button";
+import { useTranslation } from "@/src/i18n";
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const { data, isLoading, error, refetch } = useGetApiV1Me();
   const { signOut } = useAuth();
   const router = useRouter();
@@ -21,7 +23,7 @@ export default function ProfileScreen() {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center">
         <ActivityIndicator size="large" color="#7C3AED" />
-        <Text className="text-tf-text-secondary mt-4">Loading profile...</Text>
+        <Text className="text-tf-text-secondary mt-4">{t("loadingProfile")}</Text>
       </View>
     );
   }
@@ -30,10 +32,10 @@ export default function ProfileScreen() {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center px-6">
         <Text className="text-tf-error text-center mb-4">
-          Error: {error.error ?? "Failed to load profile"}
+          {t("error")}: {error.error ?? t("loadProfileError")}
         </Text>
         <Button variant="primary" onPress={() => refetch()}>
-          Retry
+          {t("retry")}
         </Button>
       </View>
     );
@@ -51,15 +53,15 @@ export default function ProfileScreen() {
     >
       <View className="px-6 pt-16 pb-4">
         <Text className="text-3xl font-bold text-tf-text-primary mb-8">
-          Profile
+          {t("profile")}
         </Text>
       </View>
 
       <View className="px-6">
         <View className="bg-tf-bg-secondary border border-tf-bg-tertiary rounded-xl p-6 mb-4">
-          <Text className="text-tf-text-secondary text-sm mb-2">User ID</Text>
+          <Text className="text-tf-text-secondary text-sm mb-2">{t("userId")}</Text>
           <Text className="text-tf-text-primary text-base font-mono">
-            {userId ?? "N/A"}
+            {userId ?? t("na")}
           </Text>
         </View>
 
@@ -67,7 +69,7 @@ export default function ProfileScreen() {
           <View className="bg-tf-bg-secondary border border-tf-bg-tertiary rounded-xl p-6 mb-4">
             {profile.first_name && (
               <View className="mb-4">
-                <Text className="text-tf-text-secondary text-sm mb-2">First Name</Text>
+                <Text className="text-tf-text-secondary text-sm mb-2">{t("firstName")}</Text>
                 <Text className="text-tf-text-primary text-base">
                   {profile.first_name}
                 </Text>
@@ -75,7 +77,7 @@ export default function ProfileScreen() {
             )}
             {profile.last_name && (
               <View className="mb-4">
-                <Text className="text-tf-text-secondary text-sm mb-2">Last Name</Text>
+                <Text className="text-tf-text-secondary text-sm mb-2">{t("lastName")}</Text>
                 <Text className="text-tf-text-primary text-base">
                   {profile.last_name}
                 </Text>
@@ -83,7 +85,7 @@ export default function ProfileScreen() {
             )}
             {profile.timezone && (
               <View>
-                <Text className="text-tf-text-secondary text-sm mb-2">Timezone</Text>
+                <Text className="text-tf-text-secondary text-sm mb-2">{t("timezone")}</Text>
                 <Text className="text-tf-text-primary text-base">
                   {profile.timezone}
                 </Text>
@@ -97,11 +99,11 @@ export default function ProfileScreen() {
           onPress={() => router.push("/(root)/profile/edit")}
           className="w-full mb-4"
         >
-          Edit Profile
+          {t("editProfile")}
         </Button>
 
         <Button variant="danger" onPress={() => signOut()} className="w-full">
-          Logout
+          {t("logout")}
         </Button>
       </View>
     </ScrollView>

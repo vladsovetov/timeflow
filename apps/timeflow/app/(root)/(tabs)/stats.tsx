@@ -28,22 +28,11 @@ import type { Timer, TimerSession } from "@acme/api-client";
 import { DateTime } from "luxon";
 import { PieChart } from "react-native-gifted-charts";
 import { useUserTimezone } from "@/src/contexts/AppContext";
-import { parseDateTime, now } from "@/src/lib/date";
+import { parseDateTime, now, formatDateLabel } from "@/src/lib/date";
+import { useTranslation } from "@/src/i18n";
 
 const SWIPE_THRESHOLD = 60;
 const SECONDS_PER_DAY = 24 * 60 * 60;
-
-function formatDateLabel(dt: DateTime, zone: string): string {
-  const today = now(zone).startOf("day");
-  const dayStart = dt.startOf("day");
-  const diffDays = dayStart.diff(today, "days").days;
-  if (diffDays === 0) return "Today";
-  if (diffDays === -1) return "Yesterday";
-  if (diffDays === 1) return "Tomorrow";
-  if (diffDays > -7 && diffDays < 0) return dayStart.toFormat("cccc");
-  if (diffDays > 0 && diffDays < 7) return dayStart.toFormat("cccc");
-  return dayStart.toFormat("MMM d, yyyy");
-}
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -90,6 +79,7 @@ type SessionWithTimer = TimerSession & {
 
 export default function StatsScreen() {
   const zone = useUserTimezone();
+  const { t, locale } = useTranslation();
   const [selectedDate, setSelectedDate] = useState(() =>
     now(zone).startOf("day")
   );
@@ -241,7 +231,7 @@ export default function StatsScreen() {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center">
         <ActivityIndicator size="large" color="#7C3AED" />
-        <Text className="text-tf-text-secondary mt-4">Loading stats...</Text>
+        <Text className="text-tf-text-secondary mt-4">{t("loadingStats")}</Text>
       </View>
     );
   }
@@ -334,12 +324,12 @@ export default function StatsScreen() {
     ) {
       items.push({
         key: "__free__",
-        label: "Free",
+        label: t("free"),
         color: "#1A1A33",
       });
     }
     return items;
-  }, [sessionsOnDay, groupByCategory, awakeSeconds, nonSleepSessionSeconds]);
+  }, [sessionsOnDay, groupByCategory, awakeSeconds, nonSleepSessionSeconds, t]);
 
   type PieSlice = {
     value: number;
@@ -349,7 +339,7 @@ export default function StatsScreen() {
   };
   const pieData = useMemo((): PieSlice[] => {
     if (awakeSeconds <= 0)
-      return [{ value: 100, color: "#1A1A33", text: "N/A", label: "N/A" }];
+      return [{ value: 100, color: "#1A1A33", text: t("na"), label: t("na") }];
     const groups = groupByCategory ? groupedByCategory : groupedByTimerType;
     const data: PieSlice[] = [];
     let sessionTotal = 0;
@@ -386,7 +376,7 @@ export default function StatsScreen() {
         value: freePct,
         color: "#1A1A33",
         text: `${Math.round(freePct)}%`,
-        label: "Free",
+        label: t("free"),
       });
     }
     return data.filter((d) => d.value > 0.5);
@@ -398,6 +388,7 @@ export default function StatsScreen() {
     dayStart,
     dayEnd,
     zone,
+    t,
   ]);
 
   return (
@@ -405,10 +396,10 @@ export default function StatsScreen() {
       <View className="flex-1 bg-tf-bg-primary">
         <View className="px-6 pt-16 pb-4 bg-tf-bg-primary">
           <Text className="text-3xl font-bold text-tf-text-primary mb-2">
-            Stats
+            {t("stats")}
           </Text>
           <Text className="text-base text-tf-text-secondary mb-3">
-            {formatDateLabel(selectedDate, zone)}
+            {formatDateLabel(selectedDate, zone, t, locale)}
           </Text>
           <View className="flex-row gap-2">
             <Pressable
@@ -428,7 +419,7 @@ export default function StatsScreen() {
                   isToday ? "text-white" : "text-tf-text-secondary"
                 }`}
               >
-                Today
+                {t("today")}
               </Text>
             </Pressable>
             <Pressable
@@ -453,19 +444,19 @@ export default function StatsScreen() {
           <View className="px-6 mb-6">
             <View className="bg-tf-bg-secondary rounded-xl p-4 mb-4">
               <Text className="text-lg font-semibold text-tf-text-primary mb-2">
-                Awake time
+                {t("awakeTime")}
               </Text>
               <Text className="text-2xl font-bold text-tf-text-primary">
                 {formatDuration(awakeSeconds)}
               </Text>
               <Text className="text-sm text-tf-text-secondary mt-1">
-                24h minus sleep ({formatDuration(sleepSeconds)})
+                {t("awakeTimeSubtitle")} ({formatDuration(sleepSeconds)})
               </Text>
             </View>
 
             <View className="bg-tf-bg-secondary rounded-xl p-4 mb-4">
               <Text className="text-lg font-semibold text-tf-text-primary mb-3">
-                Sessions timeline
+                {t("sessionsTimeline")}
               </Text>
               {legendItems.length > 0 && (
                 <View className="flex-row flex-wrap gap-x-4 gap-y-2 mb-3">
@@ -505,12 +496,12 @@ export default function StatsScreen() {
                   )}
                 </View>
                 <Text className="text-tf-text-secondary">
-                  Group by category
+                  {t("groupByCategory")}
                 </Text>
               </Pressable>
               {sessionsOnDay.length === 0 ? (
                 <Text className="text-tf-text-muted text-sm mt-2">
-                  No sessions on this day
+                  {t("noSessionsOnDay")}
                 </Text>
               ) : (
                 <View>
@@ -519,7 +510,7 @@ export default function StatsScreen() {
                       className="text-xs text-tf-text-muted mb-1"
                       numberOfLines={1}
                     >
-                      All
+                      {t("all")}
                     </Text>
                     <View
                       className="rounded-lg overflow-hidden bg-tf-bg-tertiary h-6 relative"
@@ -572,7 +563,7 @@ export default function StatsScreen() {
 
             <View className="bg-tf-bg-secondary rounded-xl p-4">
               <Text className="text-lg font-semibold text-tf-text-primary mb-3">
-                % of awake time in sessions
+                {t("percentAwakeInSessions")}
               </Text>
               {awakeSeconds > 0 && pieData.length > 0 ? (
                 <View className="items-center py-4">
@@ -591,8 +582,8 @@ export default function StatsScreen() {
                     textSize={12}
                   />
                   <Text className="text-tf-text-secondary text-sm mt-2">
-                    {formatDuration(Math.round(nonSleepSessionSeconds))} of{" "}
-                    {formatDuration(awakeSeconds)} awake
+                    {formatDuration(Math.round(nonSleepSessionSeconds))} {t("of")}{" "}
+                    {formatDuration(awakeSeconds)} {t("awake")}
                   </Text>
                   <View className="mt-4 w-full">
                     {pieData.map((slice, idx) => (
@@ -621,7 +612,7 @@ export default function StatsScreen() {
                 </View>
               ) : (
                 <Text className="text-tf-text-muted text-sm">
-                  No awake time or sessions
+                  {t("noAwakeTimeOrSessions")}
                 </Text>
               )}
             </View>

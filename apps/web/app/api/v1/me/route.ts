@@ -24,7 +24,7 @@ export async function GET() {
 
   const userRecord = await db
     .selectFrom("user")
-    .select(["id", "first_name", "last_name", "timezone"])
+    .select(["id", "first_name", "last_name", "timezone", "language"])
     .where("id", "=", user.id)
     .where("is_deleted", "=", false)
     .executeTakeFirst();
@@ -41,6 +41,7 @@ export async function GET() {
     first_name: userRecord.first_name,
     last_name: userRecord.last_name,
     timezone: userRecord.timezone,
+    language: userRecord.language,
   } satisfies MeResponse);
 }
 
@@ -76,6 +77,7 @@ export async function PATCH(request: Request) {
     first_name?: string | null;
     last_name?: string | null;
     timezone?: string | null;
+    language?: string | null;
     updated_at?: Date;
     updated_by?: string;
   } = { updated_at: new Date(), updated_by: user.id };
@@ -89,11 +91,19 @@ export async function PATCH(request: Request) {
   if (body.timezone !== undefined) {
     updates.timezone = typeof body.timezone === "string" && body.timezone.trim() ? body.timezone.trim() : null;
   }
+  if (body.language !== undefined) {
+    updates.language =
+      body.language === null || body.language === ""
+        ? null
+        : typeof body.language === "string" && body.language.trim()
+          ? body.language.trim()
+          : null;
+  }
 
   if (Object.keys(updates).length <= 2) {
     const userRecord = await db
       .selectFrom("user")
-      .select(["id", "first_name", "last_name", "timezone"])
+      .select(["id", "first_name", "last_name", "timezone", "language"])
       .where("id", "=", user.id)
       .where("is_deleted", "=", false)
       .executeTakeFirst();
@@ -110,6 +120,7 @@ export async function PATCH(request: Request) {
       first_name: userRecord.first_name,
       last_name: userRecord.last_name,
       timezone: userRecord.timezone,
+      language: userRecord.language,
     } satisfies MeResponse);
   }
 
@@ -118,7 +129,7 @@ export async function PATCH(request: Request) {
     .set(updates)
     .where("id", "=", user.id)
     .where("is_deleted", "=", false)
-    .returning(["id", "first_name", "last_name", "timezone"])
+    .returning(["id", "first_name", "last_name", "timezone", "language"])
     .execute();
 
   if (!updated) {
@@ -133,5 +144,6 @@ export async function PATCH(request: Request) {
     first_name: updated.first_name,
     last_name: updated.last_name,
     timezone: updated.timezone,
+    language: updated.language,
   } satisfies MeResponse);
 }

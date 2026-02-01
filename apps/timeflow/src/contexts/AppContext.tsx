@@ -1,7 +1,9 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { useGetApiV1Me } from "@acme/api-client";
 import type { MeResponse } from "@acme/api-client";
 import { getDeviceTimezone } from "@/src/lib/date";
+import { getEffectiveLocale } from "@/src/i18n";
+import { useTranslation } from "@/src/i18n";
 
 type AppContextValue = {
   profile: MeResponse | null;
@@ -9,6 +11,15 @@ type AppContextValue = {
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
+
+function ProfileLocaleSync() {
+  const profile = useAppContext().profile;
+  const { setLocale } = useTranslation();
+  useEffect(() => {
+    setLocale(getEffectiveLocale(profile?.language));
+  }, [profile?.language, setLocale]);
+  return null;
+}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { data } = useGetApiV1Me();
@@ -22,6 +33,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppContext.Provider value={value}>
+      <ProfileLocaleSync />
       {children}
     </AppContext.Provider>
   );

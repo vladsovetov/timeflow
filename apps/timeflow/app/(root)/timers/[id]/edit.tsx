@@ -13,6 +13,7 @@ import { TimerForm, useTimerForm } from "@/src/components/TimerForm/TimerForm";
 import { Button } from "@/src/components/Button/Button";
 import { useEffect, useCallback } from "react";
 import * as SecureStore from "expo-secure-store";
+import { useTranslation } from "@/src/i18n";
 
 const COLOR_PICKER_STORAGE_KEY = "selected_color_temp";
 
@@ -20,6 +21,7 @@ export default function EditTimerScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   const { data, isLoading, error } = useGetApiV1TimersId(id ?? "");
 
@@ -79,15 +81,15 @@ export default function EditTimerScreen() {
 
   const handleDelete = () => {
     Alert.alert(
-      "Delete Timer",
-      "Are you sure you want to delete this timer? This action cannot be undone.",
+      t("deleteTimer"),
+      t("deleteTimerConfirm"),
       [
         {
-          text: "Cancel",
+          text: t("cancel"),
           style: "cancel",
         },
         {
-          text: "Delete",
+          text: t("delete"),
           style: "destructive",
           onPress: () => {
             if (id) {
@@ -120,7 +122,7 @@ export default function EditTimerScreen() {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center">
         <ActivityIndicator size="large" color="#7C3AED" />
-        <Text className="text-tf-text-secondary mt-4">Loading timer...</Text>
+        <Text className="text-tf-text-secondary mt-4">{t("loadingTimer")}</Text>
       </View>
     );
   }
@@ -129,10 +131,10 @@ export default function EditTimerScreen() {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center px-6">
         <Text className="text-tf-error text-center mb-4">
-          {error?.error ?? "Timer not found"}
+          {error?.error ?? t("timerNotFound")}
         </Text>
         <Button variant="primary" onPress={() => router.back()}>
-          Go Back
+          {t("goBack")}
         </Button>
       </View>
     );
@@ -148,7 +150,7 @@ export default function EditTimerScreen() {
           disabled={deleteMutation.isPending}
           className="flex-1"
         >
-          {deleteMutation.isPending ? "Deleting..." : "Delete"}
+          {deleteMutation.isPending ? t("deleting") : t("delete")}
         </Button>
         <Button
           variant="primary"
@@ -156,7 +158,7 @@ export default function EditTimerScreen() {
           disabled={updateMutation.isPending}
           className="flex-1"
         >
-          {updateMutation.isPending ? "Saving..." : "Save"}
+          {updateMutation.isPending ? t("saving") : t("save")}
         </Button>
       </View>
     </View>

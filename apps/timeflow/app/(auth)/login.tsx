@@ -13,6 +13,7 @@ import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
 import { TextInput } from "@/src/components/TextInput/TextInput";
 import { Button } from "@/src/components/Button/Button";
+import { useTranslation } from "@/src/i18n";
 
 // Handle any pending authentication sessions
 WebBrowser.maybeCompleteAuthSession();
@@ -31,6 +32,7 @@ const useWarmUpBrowser = () => {
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { signIn, setActive, isLoaded } = useSignIn();
   const { startSSOFlow } = useSSO();
   useWarmUpBrowser();
@@ -62,21 +64,21 @@ export default function LoginScreen() {
       } else {
         // If the status isn't complete, check why. User might need to
         // complete further steps (e.g., MFA).
-        setError("Sign-in incomplete. Additional steps may be required.");
+        setError(t("signInIncomplete"));
       }
     } catch (err: unknown) {
       if (err && typeof err === "object" && "errors" in err) {
         const clerkError = err as { errors: Array<{ message: string }> };
         setError(
-          clerkError.errors?.[0]?.message ?? "An error occurred during sign-in."
+          clerkError.errors?.[0]?.message ?? t("signInError")
         );
       } else {
-        setError("An error occurred during sign-in.");
+        setError(t("signInError"));
       }
     } finally {
       setIsLoading(false);
     }
-  }, [emailAddress, password, signIn, setActive, isLoaded, router]);
+  }, [emailAddress, password, signIn, setActive, isLoaded, router, t]);
 
   // Handle Google SSO sign-in
   const onGoogleSignInPress = useCallback(async () => {
@@ -106,22 +108,21 @@ export default function LoginScreen() {
         await setActiveFromSSO({ session: createdSessionId });
         router.replace("/(root)/(tabs)/timers");
       } else {
-        setError("Sign-in incomplete. Additional steps may be required.");
+        setError(t("signInIncomplete"));
       }
     } catch (err: unknown) {
       if (err && typeof err === "object" && "errors" in err) {
         const clerkError = err as { errors: Array<{ message: string }> };
         setError(
-          clerkError.errors?.[0]?.message ??
-            "An error occurred during Google sign-in."
+          clerkError.errors?.[0]?.message ?? t("googleSignInError")
         );
       } else {
-        setError("An error occurred during Google sign-in.");
+        setError(t("googleSignInError"));
       }
     } finally {
       setIsGoogleLoading(false);
     }
-  }, [startSSOFlow, router]);
+  }, [startSSOFlow, router, t]);
 
   return (
     <KeyboardAvoidingView
@@ -133,7 +134,7 @@ export default function LoginScreen() {
           Timeflow
         </Text>
         <Text className="text-base text-center mb-8 text-gray-600">
-          Sign in to continue
+          {t("signInToContinue")}
         </Text>
 
         {error && (
@@ -147,7 +148,7 @@ export default function LoginScreen() {
             variant="default"
             autoCapitalize="none"
             keyboardType="email-address"
-            placeholder="Email"
+            placeholder={t("email")}
             value={emailAddress}
             onChangeText={setEmailAddress}
             editable={!isLoading && !isGoogleLoading}
@@ -158,7 +159,7 @@ export default function LoginScreen() {
           <TextInput
             variant="default"
             secureTextEntry
-            placeholder="Password"
+            placeholder={t("password")}
             value={password}
             onChangeText={setPassword}
             editable={!isLoading && !isGoogleLoading}
@@ -171,16 +172,16 @@ export default function LoginScreen() {
             variant="primary"
             onPress={onSignInPress}
             disabled={!isLoaded || isLoading || isGoogleLoading}
-            accessibilityLabel="Sign in"
+            accessibilityLabel={t("signIn")}
             className="min-h-[52px] py-4"
           >
-            {isLoading ? <ActivityIndicator color="#fff" /> : "Sign In"}
+            {isLoading ? <ActivityIndicator color="#fff" /> : t("signIn")}
           </Button>
         </View>
 
         <View className="flex-row items-center mb-6">
           <View className="flex-1 h-px bg-gray-300" />
-          <Text className="mx-4 text-sm text-gray-500 font-medium">OR</Text>
+          <Text className="mx-4 text-sm text-gray-500 font-medium">{t("or")}</Text>
           <View className="flex-1 h-px bg-gray-300" />
         </View>
 
@@ -188,7 +189,7 @@ export default function LoginScreen() {
           variant="secondary"
           onPress={onGoogleSignInPress}
           disabled={!isLoaded || isLoading || isGoogleLoading}
-          accessibilityLabel="Sign in with Google"
+          accessibilityLabel={t("signInWithGoogle")}
           className="min-h-[52px] py-4 bg-white border border-gray-300"
         >
           {isGoogleLoading ? (
@@ -201,7 +202,7 @@ export default function LoginScreen() {
                 color="#4285F4"
               />
               <Text className="text-[#3C4043] font-medium text-base">
-                Sign in with Google
+                {t("signInWithGoogle")}
               </Text>
             </View>
           )}

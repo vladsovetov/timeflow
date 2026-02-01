@@ -22,6 +22,7 @@ export interface Database {
     first_name: string | null
     last_name: string | null
     timezone: string | null
+    language: string | null
     is_deleted: boolean
     created_at: Date
     updated_at: Date

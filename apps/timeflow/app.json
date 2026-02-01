@@ -30,6 +30,15 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": ["en", "uk", "ru"],
+            "android": ["en", "uk", "ru"]
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-secure-store",

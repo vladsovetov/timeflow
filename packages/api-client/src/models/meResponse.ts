@@ -14,4 +14,6 @@ export interface MeResponse {
   last_name: string | null;
   /** @nullable */
   timezone: string | null;
+  /** @nullable */
+  language: string | null;
 }

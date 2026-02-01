@@ -10,6 +10,7 @@ export const MeResponseSchema = z
     first_name: z.string().nullable().openapi({ example: "John" }),
     last_name: z.string().nullable().openapi({ example: "Doe" }),
     timezone: z.string().nullable().openapi({ example: "America/New_York" }),
+    language: z.string().nullable().openapi({ example: "en" }),
   })
   .openapi("MeResponse");
 
@@ -19,6 +20,7 @@ export const UpdateProfileRequestSchema = z
     first_name: z.string().optional().openapi({ example: "John" }),
     last_name: z.string().optional().openapi({ example: "Doe" }),
     timezone: z.string().optional().openapi({ example: "America/New_York" }),
+    language: z.string().nullable().optional().openapi({ example: "en" }),
   })
   .openapi("UpdateProfileRequest");
 

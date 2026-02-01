@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, Switch } from "react-native";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useForm, Controller, UseFormReturn } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -12,41 +12,48 @@ import {
 } from "@acme/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { CreateTimerRequest, UpdateTimerRequest } from "@acme/api-client";
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from "expo-secure-store";
+import { useTranslation } from "@/src/i18n";
 
-const TIMER_TYPES = [
-  { key: "work", name: "Work", description: "Work-related activities", sort_order: 0, icon: "briefcase" as const },
-  { key: "study", name: "Study", description: "Learning and studying", sort_order: 1, icon: "book" as const },
-  { key: "exercise", name: "Exercise", description: "Physical exercise and fitness", sort_order: 2, icon: "barbell" as const },
-  { key: "break", name: "Break", description: "Rest and relaxation breaks", sort_order: 3, icon: "cafe" as const },
-  { key: "personal", name: "Personal", description: "Personal activities", sort_order: 4, icon: "person" as const },
-  { key: "focus", name: "Focus", description: "Focused work sessions", sort_order: 5, icon: "flash" as const },
-  { key: "meeting", name: "Meeting", description: "Meetings and discussions", sort_order: 6, icon: "people" as const },
-  { key: "hobby", name: "Hobby", description: "Hobbies and interests", sort_order: 7, icon: "color-palette" as const },
-  { key: "health", name: "Health", description: "Health-related activities", sort_order: 8, icon: "medical" as const },
-  { key: "sleep", name: "Sleep", description: "Sleep and rest", sort_order: 9, icon: "moon" as const },
-  { key: "other", name: "Other", description: "Other activities", sort_order: 10, icon: "ellipsis-horizontal" as const },
-];
+function getTimerTypes(t: (key: string) => string) {
+  return [
+    { key: "work", name: t("timerType_work"), description: t("timerType_work_desc"), sort_order: 0, icon: "briefcase" as const },
+    { key: "study", name: t("timerType_study"), description: t("timerType_study_desc"), sort_order: 1, icon: "book" as const },
+    { key: "exercise", name: t("timerType_exercise"), description: t("timerType_exercise_desc"), sort_order: 2, icon: "barbell" as const },
+    { key: "break", name: t("timerType_break"), description: t("timerType_break_desc"), sort_order: 3, icon: "cafe" as const },
+    { key: "personal", name: t("timerType_personal"), description: t("timerType_personal_desc"), sort_order: 4, icon: "person" as const },
+    { key: "focus", name: t("timerType_focus"), description: t("timerType_focus_desc"), sort_order: 5, icon: "flash" as const },
+    { key: "meeting", name: t("timerType_meeting"), description: t("timerType_meeting_desc"), sort_order: 6, icon: "people" as const },
+    { key: "hobby", name: t("timerType_hobby"), description: t("timerType_hobby_desc"), sort_order: 7, icon: "color-palette" as const },
+    { key: "health", name: t("timerType_health"), description: t("timerType_health_desc"), sort_order: 8, icon: "medical" as const },
+    { key: "sleep", name: t("timerType_sleep"), description: t("timerType_sleep_desc"), sort_order: 9, icon: "moon" as const },
+    { key: "other", name: t("timerType_other"), description: t("timerType_other_desc"), sort_order: 10, icon: "ellipsis-horizontal" as const },
+  ];
+}
 
-const createSchema = yup.object({
-  timer_type: yup.string().min(1, "Timer type is required").required(),
-  category_id: yup.string().uuid("Select a category").required("Category is required"),
-  name: yup.string().min(1, "Name is required").required(),
-  color: yup.string().optional(),
-  sort_order: yup.number().optional().default(0),
-  min_time_minutes: yup.number().nullable().min(0).optional().transform((v) => (v === "" || v == null ? null : v)),
-  is_archived: yup.boolean().optional().default(false),
-});
+function createTimerSchema(t: (key: string) => string) {
+  return yup.object({
+    timer_type: yup.string().min(1, t("timerTypeRequired")).required(),
+    category_id: yup.string().uuid(t("selectCategory")).required(t("categoryRequired")),
+    name: yup.string().min(1, t("nameRequired")).required(),
+    color: yup.string().optional(),
+    sort_order: yup.number().optional().default(0),
+    min_time_minutes: yup.number().nullable().min(0).optional().transform((v) => (v === "" || v == null ? null : v)),
+    is_archived: yup.boolean().optional().default(false),
+  });
+}
 
-const updateSchema = yup.object({
-  timer_type: yup.string().min(1).optional(),
-  category_id: yup.string().uuid().nullable().optional(),
-  name: yup.string().min(1).optional(),
-  color: yup.string().optional(),
-  sort_order: yup.number().optional(),
-  min_time_minutes: yup.number().nullable().min(0).optional().transform((v) => (v === "" || v == null ? null : v)),
-  is_archived: yup.boolean().optional(),
-});
+function updateTimerSchema() {
+  return yup.object({
+    timer_type: yup.string().min(1).optional(),
+    category_id: yup.string().uuid().nullable().optional(),
+    name: yup.string().min(1).optional(),
+    color: yup.string().optional(),
+    sort_order: yup.number().optional(),
+    min_time_minutes: yup.number().nullable().min(0).optional().transform((v) => (v === "" || v == null ? null : v)),
+    is_archived: yup.boolean().optional(),
+  });
+}
 
 export type TimerFormData = CreateTimerRequest | UpdateTimerRequest;
 
@@ -67,6 +74,8 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
   } = form;
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  const timerTypes = useMemo(() => getTimerTypes(t), [t]);
   const { data: categoriesData } = useGetApiV1TimerCategories();
   const categories = categoriesData?.status === 200 ? categoriesData.data.data : [];
   const createCategoryMutation = usePostApiV1TimerCategories({
@@ -115,12 +124,12 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
           render={({ field: { onChange, value } }) => (
             <View className="mb-4">
               <Text className="text-tf-text-primary text-sm mb-2">
-                Timer Type *
+                {t("timerType")} *
               </Text>
               <View className="bg-tf-input-bg border border-tf-input-border rounded-xl">
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View className="flex-row p-2">
-                    {TIMER_TYPES.map((type) => (
+                    {timerTypes.map((type) => (
                       <TouchableOpacity
                         key={type.key}
                         onPress={() => onChange(type.key)}
@@ -165,7 +174,7 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
           render={({ field: { onChange, value } }) => (
             <View className="mb-4">
               <Text className="text-tf-text-primary text-sm mb-2">
-                Category *
+                {t("category")} *
               </Text>
               <View className="bg-tf-input-bg border border-tf-input-border rounded-xl">
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -203,7 +212,7 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
                     >
                       <Ionicons name="add" size={18} color="#8A8DB3" />
                       <Text className="text-tf-text-secondary ml-1">
-                        Add custom
+                        {t("addCustom")}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -212,13 +221,13 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
               {showAddCategory && (
                 <View className="mt-3 p-3 bg-tf-bg-secondary rounded-xl border border-tf-input-border">
                   <Text className="text-tf-text-primary text-sm mb-2">
-                    New category
+                    {t("newCategory")}
                   </Text>
                   <View className="flex-row gap-2 mb-2">
                     <View className="flex-1">
                       <TextInput
                         variant="default"
-                        placeholder="Name"
+                        placeholder={t("name")}
                         value={newCategoryName}
                         onChangeText={setNewCategoryName}
                       />
@@ -243,7 +252,7 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
                       }}
                       className="flex-1 py-2 rounded-lg bg-tf-bg-tertiary items-center"
                     >
-                      <Text className="text-tf-text-secondary">Cancel</Text>
+                      <Text className="text-tf-text-secondary">{t("cancel")}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => {
@@ -262,7 +271,7 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
                       className="flex-1 py-2 rounded-lg bg-tf-purple items-center"
                     >
                       <Text className="text-white">
-                        {createCategoryMutation.isPending ? "Adding..." : "Add"}
+                        {createCategoryMutation.isPending ? t("adding") : t("add")}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -282,10 +291,10 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
           name="name"
           render={({ field: { onChange, onBlur, value } }) => (
             <View className="mb-4">
-              <Text className="text-tf-text-primary text-sm mb-2">Name *</Text>
+              <Text className="text-tf-text-primary text-sm mb-2">{t("name")} *</Text>
               <TextInput
                 variant="default"
-                placeholder="Enter timer name"
+                placeholder={t("enterTimerName")}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -300,7 +309,7 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
           name="color"
           render={({ field: { onChange, onBlur, value } }) => (
             <View className="mb-4">
-              <Text className="text-tf-text-primary text-sm mb-2">Color</Text>
+              <Text className="text-tf-text-primary text-sm mb-2">{t("color")}</Text>
               <TouchableOpacity
                 onPress={() => {
                   router.push({
@@ -338,7 +347,7 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
           render={({ field: { onChange, onBlur, value } }) => (
             <View className="mb-4">
               <Text className="text-tf-text-primary text-sm mb-2">
-                Sort Order
+                {t("sortOrder")}
               </Text>
               <TextInput
                 variant="default"
@@ -361,11 +370,11 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
           render={({ field: { onChange, onBlur, value } }) => (
             <View className="mb-4">
               <Text className="text-tf-text-primary text-sm mb-2">
-                Min time (minutes)
+                {t("minTimeMinutes")}
               </Text>
               <TextInput
                 variant="default"
-                placeholder="e.g. 30"
+                placeholder={t("minTimePlaceholder")}
                 keyboardType="numeric"
                 value={value != null ? value.toString() : ""}
                 onChangeText={(text) => {
@@ -379,7 +388,7 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
                 onBlur={onBlur}
               />
               <Text className="text-tf-text-secondary text-xs mt-1">
-                Optional. Daily goal in minutes. Shows a progress bar on the timer card.
+                {t("minTimeHint")}
               </Text>
             </View>
           )}
@@ -390,7 +399,7 @@ export function TimerForm({ form, isUpdate = false }: TimerFormProps) {
           name="is_archived"
           render={({ field: { onChange, value } }) => (
             <View className="mb-6 flex-row items-center justify-between">
-              <Text className="text-tf-text-primary text-sm">Archived</Text>
+              <Text className="text-tf-text-primary text-sm">{t("archived")}</Text>
               <Switch
                 value={value ?? false}
                 onValueChange={onChange}
@@ -409,7 +418,11 @@ export function useTimerForm(
   defaultValues?: Partial<TimerFormValues>,
   isUpdate = false
 ) {
-  const schema = isUpdate ? updateSchema : createSchema;
+  const { t } = useTranslation();
+  const schema = useMemo(
+    () => (isUpdate ? updateTimerSchema() : createTimerSchema(t)),
+    [isUpdate, t]
+  );
 
   return useForm<TimerFormValues>({
     resolver: yupResolver(schema),

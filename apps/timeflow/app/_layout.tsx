@@ -9,6 +9,7 @@ import { configureApiClient } from "@acme/api-client";
 import * as SecureStore from "expo-secure-store";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SyncProvider } from "@/src/contexts/SyncContext";
+import { I18nProvider } from "@/src/i18n";
 
 const ONE_MONTH_MS = 1000 * 60 * 60 * 24 * 30;
 
@@ -89,13 +90,15 @@ export default function RootLayout() {
           publishableKey={clerkPublishableKey ?? ""}
           tokenCache={tokenCache}
         >
-          <ClerkLoaded>
-            <ApiClientConfigurator>
-              <SyncProvider>
-                <Slot />
-              </SyncProvider>
-            </ApiClientConfigurator>
-          </ClerkLoaded>
+          <I18nProvider>
+            <ClerkLoaded>
+              <ApiClientConfigurator>
+                <SyncProvider>
+                  <Slot />
+                </SyncProvider>
+              </ApiClientConfigurator>
+            </ClerkLoaded>
+          </I18nProvider>
         </ClerkProvider>
       </PersistQueryClientProvider>
     </GestureHandlerRootView>

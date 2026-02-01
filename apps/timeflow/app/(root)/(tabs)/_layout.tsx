@@ -1,7 +1,9 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "@/src/i18n";
 
 export default function TabsLayout() {
+  const { t } = useTranslation();
   return (
     <Tabs
       screenOptions={{
@@ -17,8 +19,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="timers"
         options={{
-          title: "Timers",
-          tabBarLabel: "Timers",
+          title: t("timers"),
+          tabBarLabel: t("timers"),
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="timer-outline" size={size} color={color} />
           ),
@@ -27,8 +29,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="stats"
         options={{
-          title: "Stats",
-          tabBarLabel: "Stats",
+          title: t("stats"),
+          tabBarLabel: t("stats"),
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="stats-chart-outline" size={size} color={color} />
           ),
@@ -37,8 +39,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
-          tabBarLabel: "Profile",
+          title: t("profile"),
+          tabBarLabel: t("profile"),
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),

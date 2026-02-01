@@ -19,17 +19,21 @@ import { DateTime } from "luxon";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useUserTimezone } from "@/src/contexts/AppContext";
 import { parseDateTime } from "@/src/lib/date";
+import { useTranslation } from "@/src/i18n";
 
 const MAX_END_ISO = "9999-12-31T23:59:59.999Z";
 
-function buildEditSessionSchema(otherSessions: { started_at: string; ended_at: string | null }[]) {
+function buildEditSessionSchema(
+  otherSessions: { started_at: string; ended_at: string | null }[],
+  t: (key: string) => string
+) {
   return yup
     .object({
-      started_at: yup.string().required("Start time is required"),
+      started_at: yup.string().required(t("startTimeRequired")),
       ended_at: yup
         .string()
         .nullable()
-        .test("after-start", "End time must be after start time", function (value) {
+        .test("after-start", t("endTimeAfterStart"), function (value) {
           if (value == null || value === "") return true;
           const { started_at } = this.parent;
           return !!started_at && value > started_at;
@@ -37,7 +41,7 @@ function buildEditSessionSchema(otherSessions: { started_at: string; ended_at: s
     })
     .test(
       "no-overlap",
-      "This session overlaps with an existing session",
+      t("sessionOverlaps"),
       function (value) {
         if (!value?.started_at) return true;
         const startA = value.started_at;
@@ -76,6 +80,7 @@ export default function EditSessionScreen() {
   const { id, sessionId } = useLocalSearchParams<{ id: string; sessionId: string }>();
   const queryClient = useQueryClient();
   const zone = useUserTimezone();
+  const { t } = useTranslation();
 
   const { data, isLoading, error } = useGetApiV1TimerSessionsId(sessionId ?? "");
   const session = data?.status === 200 ? data.data.data : null;
@@ -105,8 +110,8 @@ export default function EditSessionScreen() {
     [timerSessions, session?.id]
   );
   const editSessionSchema = useMemo(
-    () => buildEditSessionSchema(otherSessions),
-    [otherSessions]
+    () => buildEditSessionSchema(otherSessions, t),
+    [otherSessions, t]
   );
 
   const [pickerMode, setPickerMode] = useState<"start" | "end" | null>(null);
@@ -141,7 +146,7 @@ export default function EditSessionScreen() {
         // API returns 409 on overlap; generated client types may not include 409 until spec is regenerated
         const statusNum: number = result.status;
         if (statusNum === 409) {
-          setError("root", { message: "Session overlaps with an existing session" });
+          setError("root", { message: t("sessionOverlapsExisting") });
           return;
         }
         queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
@@ -191,7 +196,7 @@ export default function EditSessionScreen() {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center">
         <ActivityIndicator size="large" color="#7C3AED" />
-        <Text className="text-tf-text-secondary mt-4">Loading session...</Text>
+        <Text className="text-tf-text-secondary mt-4">{t("loadingSession")}</Text>
       </View>
     );
   }
@@ -200,10 +205,10 @@ export default function EditSessionScreen() {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center px-6">
         <Text className="text-tf-error text-center mb-4">
-          {error?.error ?? "Session not found"}
+          {error?.error ?? t("sessionNotFound")}
         </Text>
         <Button variant="primary" onPress={() => router.back()}>
-          Go Back
+          {t("goBack")}
         </Button>
       </View>
     );
@@ -223,9 +228,9 @@ export default function EditSessionScreen() {
     <View className="flex-1 bg-tf-bg-primary">
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 24 }}>
         <Text className="text-tf-text-secondary text-sm mb-2">
-          Times in your timezone ({zone}). Date cannot be changed.
+          {t("timesInTimezone", { zone })}
         </Text>
-        <Text className="text-tf-text-primary text-base mb-2">Start time</Text>
+        <Text className="text-tf-text-primary text-base mb-2">{t("startTime")}</Text>
         <TouchableOpacity
           className="h-12 px-4 rounded-xl bg-tf-input-bg border border-tf-input-border justify-center mb-4"
           onPress={() => setPickerMode("start")}
@@ -238,14 +243,14 @@ export default function EditSessionScreen() {
         {errors.started_at ? (
           <Text className="text-tf-error text-sm mb-2">{errors.started_at.message}</Text>
         ) : null}
-        <Text className="text-tf-text-primary text-base mb-2">End time</Text>
+        <Text className="text-tf-text-primary text-base mb-2">{t("endTime")}</Text>
         <TouchableOpacity
           className="h-12 px-4 rounded-xl bg-tf-input-bg border border-tf-input-border justify-center mb-4"
           onPress={() => setPickerMode("end")}
           activeOpacity={0.7}
         >
           <Text className="text-tf-text-primary text-base">
-            {endDateTime ? endDateTime.toFormat("HH:mm") : "Still active (tap to set)"}
+            {endDateTime ? endDateTime.toFormat("HH:mm") : t("stillActive")}
           </Text>
         </TouchableOpacity>
         {errors.ended_at ? (
@@ -257,12 +262,12 @@ export default function EditSessionScreen() {
         {(previousSession ?? nextSession) ? (
           <View className="mb-6 rounded-xl bg-tf-input-bg border border-tf-input-border p-4">
             <Text className="text-tf-text-secondary text-xs mb-3">
-              Time bounds (from adjacent sessions)
+              {t("timeBounds")}
             </Text>
             {previousSession ? (
               <View className="mb-2">
                 <Text className="text-tf-text-primary text-sm">
-                  Previous session:{" "}
+                  {t("previousSession")}:{" "}
                   {parseDateTime(previousSession.started_at, zone).toFormat("HH:mm")}
                   {" – "}
                   {previousSession.ended_at
@@ -270,17 +275,17 @@ export default function EditSessionScreen() {
                     : "…"}
                 </Text>
                 <Text className="text-tf-text-secondary text-xs mt-0.5">
-                  Start time cannot be before{" "}
+                  {t("startCannotBeBefore")}{" "}
                   {previousSession.ended_at
                     ? parseDateTime(previousSession.ended_at, zone).toFormat("HH:mm")
-                    : "previous end"}
+                    : t("previousEnd")}
                 </Text>
               </View>
             ) : null}
             {nextSession ? (
               <View>
                 <Text className="text-tf-text-primary text-sm">
-                  Next session:{" "}
+                  {t("nextSession")}:{" "}
                   {parseDateTime(nextSession.started_at, zone).toFormat("HH:mm")}
                   {" – "}
                   {nextSession.ended_at
@@ -288,7 +293,7 @@ export default function EditSessionScreen() {
                     : "…"}
                 </Text>
                 <Text className="text-tf-text-secondary text-xs mt-0.5">
-                  End time cannot be after{" "}
+                  {t("endCannotBeAfter")}{" "}
                   {parseDateTime(nextSession.started_at, zone).toFormat("HH:mm")}
                 </Text>
               </View>
@@ -300,7 +305,7 @@ export default function EditSessionScreen() {
           onPress={handleSubmit(onSubmit)}
           disabled={updateMutation.isPending || isSubmitting}
         >
-          {updateMutation.isPending ? "Saving..." : "Save"}
+          {updateMutation.isPending ? t("saving") : t("save")}
         </Button>
       </ScrollView>
       <DateTimePickerModal

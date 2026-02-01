@@ -5,10 +5,17 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import SelectDropdown from "react-native-select-dropdown";
 import { useRouter } from "expo-router";
-import { useGetApiV1Me, usePatchApiV1Me } from "@acme/api-client";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetApiV1Me,
+  usePatchApiV1Me,
+  getGetApiV1MeQueryKey,
+} from "@acme/api-client";
 import { TextInput } from "@/src/components/TextInput/TextInput";
 import { Button } from "@/src/components/Button/Button";
 import type { UpdateProfileRequest } from "@acme/api-client";
+import { useTranslation } from "@/src/i18n";
+import { SUPPORTED_LOCALES } from "@/src/i18n";
 
 // Comprehensive list of IANA timezones (React Native doesn't support Intl.supportedValuesOf)
 const IANA_TIMEZONES = [
@@ -103,19 +110,36 @@ const TIMEZONES = IANA_TIMEZONES.map((tz) => ({
 })).sort((a, b) => a.label.localeCompare(b.label));
 
 const profileSchema = yup.object({
-  first_name: yup.string().nullable().optional().transform((v) => (v === "" || v == null ? null : v)),
-  last_name: yup.string().nullable().optional().transform((v) => (v === "" || v == null ? null : v)),
-  timezone: yup.string().nullable().optional().transform((v) => (v === "" || v == null ? null : v)),
+  first_name: yup.string().optional().transform((v) => (v === "" || v == null ? undefined : v)),
+  last_name: yup.string().optional().transform((v) => (v === "" || v == null ? undefined : v)),
+  timezone: yup.string().optional().transform((v) => (v === "" || v == null ? undefined : v)),
+  language: yup
+    .string()
+    .nullable()
+    .optional()
+    .transform((v) => (v === "" ? null : v)),
 });
 
 type ProfileFormValues = UpdateProfileRequest;
 
+const LANGUAGE_OPTIONS = [
+  { value: "", labelKey: "languageDevice" as const },
+  ...SUPPORTED_LOCALES.map((code) => ({ value: code, labelKey: `language_${code}` as const })),
+];
+
 export default function EditProfileScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const { data: profileData, isLoading: isLoadingProfile } = useGetApiV1Me();
   const updateProfile = usePatchApiV1Me();
 
   const profile = profileData?.status === 200 ? profileData.data : null;
+
+  const languages = LANGUAGE_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: t(opt.labelKey),
+  }));
 
   const {
     control,
@@ -125,26 +149,37 @@ export default function EditProfileScreen() {
   } = useForm<ProfileFormValues>({
     resolver: yupResolver(profileSchema),
     defaultValues: {
-      first_name: null,
-      last_name: null,
-      timezone: null,
+      first_name: undefined,
+      last_name: undefined,
+      timezone: undefined,
+      language: undefined,
     },
   });
 
   useEffect(() => {
     if (profile) {
       reset({
-        first_name: profile.first_name ?? null,
-        last_name: profile.last_name ?? null,
-        timezone: profile.timezone ?? null,
+        first_name: profile.first_name ?? undefined,
+        last_name: profile.last_name ?? undefined,
+        timezone: profile.timezone ?? undefined,
+        language: profile.language ?? null,
       });
     }
   }, [profile, reset]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     try {
-      const result = await updateProfile.mutateAsync({ data });
+      const result = await updateProfile.mutateAsync({
+        data: {
+          ...data,
+          language:
+            data.language === "" || data.language === null
+              ? null
+              : data.language ?? undefined,
+        },
+      });
       if (result.status === 200) {
+        await queryClient.invalidateQueries({ queryKey: getGetApiV1MeQueryKey() });
         router.back();
       }
     } catch (error) {
@@ -156,7 +191,7 @@ export default function EditProfileScreen() {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center">
         <ActivityIndicator size="large" color="#7C3AED" />
-        <Text className="text-tf-text-secondary mt-4">Loading profile...</Text>
+        <Text className="text-tf-text-secondary mt-4">{t("loadingProfile")}</Text>
       </View>
     );
   }
@@ -173,12 +208,12 @@ export default function EditProfileScreen() {
             name="first_name"
             render={({ field: { onChange, onBlur, value } }) => (
               <View className="mb-4">
-                <Text className="text-tf-text-primary text-sm mb-2">First Name</Text>
+                <Text className="text-tf-text-primary text-sm mb-2">{t("firstName")}</Text>
                 <TextInput
                   variant="default"
-                  placeholder="Enter first name"
+                  placeholder={t("enterFirstName")}
                   value={value ?? ""}
-                  onChangeText={(text) => onChange(text || null)}
+                  onChangeText={(text) => onChange(text || undefined)}
                   onBlur={onBlur}
                   error={errors.first_name?.message}
                 />
@@ -191,12 +226,12 @@ export default function EditProfileScreen() {
             name="last_name"
             render={({ field: { onChange, onBlur, value } }) => (
               <View className="mb-4">
-                <Text className="text-tf-text-primary text-sm mb-2">Last Name</Text>
+                <Text className="text-tf-text-primary text-sm mb-2">{t("lastName")}</Text>
                 <TextInput
                   variant="default"
-                  placeholder="Enter last name"
+                  placeholder={t("enterLastName")}
                   value={value ?? ""}
-                  onChangeText={(text) => onChange(text || null)}
+                  onChangeText={(text) => onChange(text || undefined)}
                   onBlur={onBlur}
                   error={errors.last_name?.message}
                 />
@@ -211,11 +246,11 @@ export default function EditProfileScreen() {
               const selectedTimezone = value ? TIMEZONES.find((tz) => tz.value === value) : null;
               return (
                 <View className="mb-6">
-                  <Text className="text-tf-text-primary text-sm mb-2">Timezone</Text>
+                  <Text className="text-tf-text-primary text-sm mb-2">{t("timezone")}</Text>
                   <SelectDropdown
                     data={TIMEZONES}
                     onSelect={(selectedItem) => {
-                      onChange(selectedItem?.value ?? null);
+                      onChange(selectedItem?.value ?? undefined);
                       onBlur();
                     }}
                     defaultValue={selectedTimezone}
@@ -229,7 +264,7 @@ export default function EditProfileScreen() {
                       paddingVertical: 10,
                     }}
                     searchInputTxtColor="#FFFFFF"
-                    searchPlaceHolder="Search timezone..."
+                    searchPlaceHolder={t("searchTimezone")}
                     searchPlaceHolderColor="#8A8DB3"
                     renderButton={(selectedItem, isOpened) => (
                       <View
@@ -253,7 +288,7 @@ export default function EditProfileScreen() {
                             flex: 1,
                           }}
                         >
-                          {selectedItem ? selectedItem.label : "Select timezone..."}
+                          {selectedItem ? selectedItem.label : t("selectTimezone")}
                         </Text>
                         <Text style={{ color: "#8A8DB3", fontSize: 16 }}>
                           {isOpened ? "▲" : "▼"}
@@ -298,6 +333,89 @@ export default function EditProfileScreen() {
             }}
           />
 
+          <Controller
+            control={control}
+            name="language"
+            render={({ field: { onChange, onBlur, value } }) => {
+              const formValue = value ?? "";
+              const selectedLanguage = languages.find((l) => l.value === formValue) ?? null;
+              return (
+                <View className="mb-6">
+                  <Text className="text-tf-text-primary text-sm mb-2">{t("language")}</Text>
+                  <SelectDropdown
+                    data={languages}
+                    onSelect={(selectedItem) => {
+                      onChange(selectedItem?.value ?? "");
+                      onBlur();
+                    }}
+                    defaultValue={selectedLanguage}
+                    renderButton={(selectedItem, isOpened) => (
+                      <View
+                        style={{
+                          width: "100%",
+                          height: 48,
+                          backgroundColor: "#1A1B23",
+                          borderRadius: 12,
+                          borderWidth: 1,
+                          borderColor: errors.language ? "#EF4444" : "#2A2B33",
+                          flexDirection: "row",
+                          alignItems: "center",
+                          paddingHorizontal: 12,
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: selectedItem ? "#FFFFFF" : "#8A8DB3",
+                            fontSize: 16,
+                            flex: 1,
+                          }}
+                        >
+                          {selectedItem ? selectedItem.label : t("selectLanguage")}
+                        </Text>
+                        <Text style={{ color: "#8A8DB3", fontSize: 16 }}>
+                          {isOpened ? "▲" : "▼"}
+                        </Text>
+                      </View>
+                    )}
+                    renderItem={(item, index, isSelected) => (
+                      <View
+                        style={{
+                          backgroundColor: isSelected ? "#2A2B33" : "#1A1B23",
+                          borderBottomWidth: 1,
+                          borderBottomColor: "#2A2B33",
+                          paddingHorizontal: 12,
+                          paddingVertical: 12,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: isSelected ? "#7C3AED" : "#FFFFFF",
+                            fontSize: 16,
+                          }}
+                        >
+                          {item.label}
+                        </Text>
+                      </View>
+                    )}
+                    dropdownStyle={{
+                      backgroundColor: "#1A1B23",
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: "#2A2B33",
+                    }}
+                    dropdownOverlayColor="rgba(0, 0, 0, 0.5)"
+                  />
+                  {errors.language && (
+                    <Text className="text-tf-error text-xs mt-1">
+                      {errors.language.message}
+                    </Text>
+                  )}
+                </View>
+              );
+            }}
+          />
+
           <View className="flex-row gap-3">
             <Button
               variant="secondary"
@@ -305,7 +423,7 @@ export default function EditProfileScreen() {
               disabled={isSubmitting}
               className="flex-1"
             >
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               variant="primary"
@@ -316,7 +434,7 @@ export default function EditProfileScreen() {
               {isSubmitting ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                "Save"
+                t("save")
               )}
             </Button>
           </View>

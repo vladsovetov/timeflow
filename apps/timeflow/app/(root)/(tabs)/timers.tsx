@@ -20,26 +20,16 @@ import { Button } from "@/src/components/Button/Button";
 import { Timer } from "@/src/components/Timer/Timer";
 import type { Timer as TimerModel } from "@acme/api-client";
 import { useUserTimezone } from "@/src/contexts/AppContext";
-import { now } from "@/src/lib/date";
+import { now, formatDateLabel } from "@/src/lib/date";
+import { useTranslation } from "@/src/i18n";
 
 const SWIPE_THRESHOLD = 60;
-
-function formatDateLabel(dt: DateTime, zone: string): string {
-  const today = now(zone).startOf("day");
-  const dayStart = dt.startOf("day");
-  const diffDays = dayStart.diff(today, "days").days;
-  if (diffDays === 0) return "Today";
-  if (diffDays === -1) return "Yesterday";
-  if (diffDays === 1) return "Tomorrow";
-  if (diffDays > -7 && diffDays < 0) return dayStart.toFormat("cccc"); // last week: "Monday"
-  if (diffDays > 0 && diffDays < 7) return dayStart.toFormat("cccc"); // next week
-  return dayStart.toFormat("MMM d, yyyy");
-}
 
 export default function TimersScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const zone = useUserTimezone();
+  const { t, locale } = useTranslation();
   const [selectedDate, setSelectedDate] = useState(() => now(zone).startOf("day"));
   const dateParam = useMemo(
     () => selectedDate.toFormat("yyyy-MM-dd"),
@@ -131,7 +121,7 @@ export default function TimersScreen() {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center">
         <ActivityIndicator size="large" color="#7C3AED" />
-        <Text className="text-tf-text-secondary mt-4">Loading timers...</Text>
+        <Text className="text-tf-text-secondary mt-4">{t("loadingTimers")}</Text>
       </View>
     );
   }
@@ -140,10 +130,10 @@ export default function TimersScreen() {
     return (
       <View className="flex-1 bg-tf-bg-primary items-center justify-center px-6">
         <Text className="text-tf-error text-center mb-4">
-          Error: {error instanceof Error ? error.message : "Failed to load timers"}
+          {t("error")}: {error instanceof Error ? error.message : t("loadTimersError")}
         </Text>
         <Button variant="primary" onPress={() => refetch()}>
-          Retry
+          {t("retry")}
         </Button>
       </View>
     );
@@ -212,10 +202,10 @@ export default function TimersScreen() {
             className="w-full mb-3"
             disabled={reorderMutation.isPending}
           >
-            {reorderMutation.isPending ? "Saving…" : "Apply order"}
+            {reorderMutation.isPending ? t("saving") : t("applyOrder")}
           </Button>
           <Button variant="ghost" onPress={exitReorderMode} className="w-full">
-            Cancel
+            {t("cancel")}
           </Button>
         </>
       ) : (
@@ -234,7 +224,7 @@ export default function TimersScreen() {
             onPress={() => router.push("/(root)/timers/create")}
             className="w-full mb-3"
           >
-            Create Timer
+            {t("createTimer")}
           </Button>
           {isToday && timers.length > 0 && (
             <Button
@@ -242,7 +232,7 @@ export default function TimersScreen() {
               onPress={() => setIsReorderMode(true)}
               className="w-full"
             >
-              Change order
+              {t("changeOrder")}
             </Button>
           )}
         </>
@@ -255,10 +245,10 @@ export default function TimersScreen() {
       <View className="flex-1 bg-tf-bg-primary">
         <View className="px-6 pt-16 pb-4 bg-tf-bg-primary">
           <Text className="text-3xl font-bold text-tf-text-primary mb-2">
-            Timers
+            {t("timers")}
           </Text>
           <Text className="text-base text-tf-text-secondary mb-3">
-            {formatDateLabel(selectedDate, zone)}
+            {formatDateLabel(selectedDate, zone, t, locale)}
           </Text>
           <View className="flex-row gap-2">
             <Pressable
@@ -278,7 +268,7 @@ export default function TimersScreen() {
                   isToday ? "text-white" : "text-tf-text-secondary"
                 }`}
               >
-                Today
+                {t("today")}
               </Text>
             </Pressable>
             <Pressable
@@ -297,13 +287,13 @@ export default function TimersScreen() {
               contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: 24 }}
             >
               <Text className="text-tf-text-secondary text-center mb-6">
-                No timers yet. Create your first timer to get started!
+                {t("noTimersYet")}
               </Text>
               <Button
                 variant="primary"
                 onPress={() => router.push("/(root)/timers/create")}
               >
-                Create Timer
+                {t("createTimer")}
               </Button>
             </ScrollView>
           </View>

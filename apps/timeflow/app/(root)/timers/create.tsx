@@ -7,12 +7,14 @@ import { useCallback } from "react";
 import * as SecureStore from "expo-secure-store";
 import { TimerForm, useTimerForm } from "@/src/components/TimerForm/TimerForm";
 import { Button } from "@/src/components/Button/Button";
+import { useTranslation } from "@/src/i18n";
 
 const COLOR_PICKER_STORAGE_KEY = "selected_color_temp";
 
 export default function CreateTimerScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const form = useTimerForm(undefined, false);
 
   // Handle color selection from color picker
@@ -65,7 +67,7 @@ export default function CreateTimerScreen() {
           disabled={createMutation.isPending}
           className="w-full"
         >
-          {createMutation.isPending ? "Creating..." : "Create Timer"}
+          {createMutation.isPending ? t("creating") : t("createTimer")}
         </Button>
       </View>
     </View>
