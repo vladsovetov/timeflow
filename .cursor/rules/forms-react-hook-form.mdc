@@ -1,0 +1,38 @@
+---
+description: Use React Hook Form for all forms in the project
+alwaysApply: true
+---
+
+# Forms: React Hook Form
+
+Always use **react-hook-form** for any form in this project (screens and components).
+
+## Setup
+
+- Use `useForm` from `react-hook-form` with typed form values.
+- Prefer **yup** + `@hookform/resolvers/yup` for validation: `resolver: yupResolver(schema)`.
+- Define the schema with `yup.object({...})` and infer the form type: `type FormValues = yup.InferType<typeof schema>`.
+
+## Patterns
+
+- **Custom / non-input fields** (e.g. time pickers, dropdowns): use `watch`, `setValue`, and optional `Controller` when you need to drive a controlled component.
+- **Standard inputs**: use `Controller` with `control`, `name`, and `render` so validation and errors are wired correctly.
+- **Reset when async data loads**: call `reset(values)` inside `useEffect` when the initial data is available.
+- **Submit**: use `handleSubmit(onSubmit)`; keep API calls inside `onSubmit` and let the resolver handle validation.
+
+## Example
+
+```tsx
+const schema = yup.object({
+  started_at: yup.string().required("Start time is required"),
+  ended_at: yup.string().nullable().test(/* ... */),
+});
+type FormValues = yup.InferType<typeof schema>;
+
+const { handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<FormValues>({
+  defaultValues: { started_at: "", ended_at: null },
+  resolver: yupResolver(schema),
+});
+```
+
+Do not implement forms with ad-hoc `useState` for fields and manual validation; use react-hook-form instead.

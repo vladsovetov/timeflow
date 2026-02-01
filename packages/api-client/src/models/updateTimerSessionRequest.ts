@@ -7,5 +7,11 @@
  */
 
 export interface UpdateTimerSessionRequest {
-  ended_at: string;
+  /** Edit session start time (user correction). Send with ended_at for full edit. */
+  started_at?: string;
+  /**
+   * End session (if not yet ended) or edit end time. Required when ending; optional for edit.
+   * @nullable
+   */
+  ended_at?: string | null;
 }

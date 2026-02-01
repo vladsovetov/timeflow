@@ -1,3 +1,4 @@
+import React from "react";
 import { View, Text, FlatList, ActivityIndicator, ScrollView, TouchableOpacity, Dimensions } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import {
@@ -11,7 +12,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { BarChart } from "react-native-gifted-charts";
 import { useMemo } from "react";
 import { DateTime } from "luxon";
-import { parseDateTime, now, getUserTimezone } from "@/src/lib/date";
+import { useUserTimezone } from "@/src/contexts/AppContext";
+import { parseDateTime, now } from "@/src/lib/date";
+import { SessionTimeDisplay } from "@/src/components/SessionTimeDisplay/SessionTimeDisplay";
 
 const TIMER_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   work: "briefcase",
@@ -41,9 +44,9 @@ function formatTime(seconds: number): string {
   return `${secs}s`;
 }
 
-function formatDate(dateString: string): string {
-  const date = parseDateTime(dateString);
-  const current = now();
+function formatDate(dateString: string, zone: string): string {
+  const date = parseDateTime(dateString, zone);
+  const current = now(zone);
   const today = current.startOf("day");
   const sessionDate = date.startOf("day");
 
@@ -70,14 +73,14 @@ function formatDate(dateString: string): string {
   return date.toLocaleString(formatOptions);
 }
 
-function calculateDuration(startedAt: string, endedAt: string | null): number {
-  const start = parseDateTime(startedAt);
-  const end = endedAt ? parseDateTime(endedAt) : now();
+function calculateDuration(startedAt: string, endedAt: string | null, zone: string): number {
+  const start = parseDateTime(startedAt, zone);
+  const end = endedAt ? parseDateTime(endedAt, zone) : now(zone);
   return Math.max(0, Math.floor(end.diff(start, "seconds").seconds));
 }
 
-function getLastWeekDates() {
-  const endDate = now();
+function getLastWeekDates(zone: string) {
+  const endDate = now(zone);
   const startDate = endDate.minus({ days: 6 });
   
   return {
@@ -86,19 +89,20 @@ function getLastWeekDates() {
   };
 }
 
-function getDayLabel(dateString: string): string {
-  const date = DateTime.fromISO(dateString, { zone: getUserTimezone() });
+function getDayLabel(dateString: string, zone: string): string {
+  const date = DateTime.fromISO(dateString, { zone });
   return date.toFormat("EEE");
 }
 
 export default function TimerDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const zone = useUserTimezone();
   
   const { data: timerData, isLoading: isLoadingTimer, error: timerError } = useGetApiV1TimersId(id ?? "");
   const { data: sessionsData, isLoading: isLoadingSessions, error: sessionsError } = useGetApiV1TimerSessions();
   
-  const weekDates = useMemo(() => getLastWeekDates(), []);
+  const weekDates = useMemo(() => getLastWeekDates(zone), [zone]);
   const { data: statsData, isLoading: isLoadingStats } = useGetApiV1TimersIdStats(
     id ?? "",
     { start_date: weekDates.start, end_date: weekDates.end }
@@ -118,19 +122,19 @@ export default function TimerDetailsScreen() {
       value: number;
       label: string;
       frontColor: string;
-      topLabelComponent: () => JSX.Element;
+      topLabelComponent: () => React.ReactElement;
     }> = [];
     const statsMap = new Map(stats.map((s) => [s.date, s.total_timer_session_time]));
     
     for (let i = 6; i >= 0; i--) {
-      const date = now().minus({ days: i });
+      const date = now(zone).minus({ days: i });
       const dateStr = date.toISODate() ?? "";
       const totalSeconds = statsMap.get(dateStr) || 0;
       const minutes = Math.floor(totalSeconds / 60);
       
       days.push({
         value: minutes,
-        label: getDayLabel(dateStr),
+        label: getDayLabel(dateStr, zone),
         frontColor: timer?.color ? `${timer.color}80` : "#7C3AED80",
         topLabelComponent: () => (
           <Text className="text-tf-text-secondary text-xs" style={{ fontSize: 10 }}>
@@ -141,7 +145,7 @@ export default function TimerDetailsScreen() {
     }
     
     return days;
-  }, [stats, timer?.color]);
+  }, [stats, timer?.color, zone]);
 
   const maxMinutes = useMemo(() => {
     if (chartData.length === 0) return 60;
@@ -250,15 +254,26 @@ export default function TimerDetailsScreen() {
           ) : (
             <View>
               {sessions.map((session: TimerSession) => {
-                const duration = calculateDuration(session.started_at, session.ended_at);
+                const duration = calculateDuration(session.started_at, session.ended_at, zone);
                 const isActive = session.ended_at === null;
 
                 return (
-                  <View key={session.id} className="mb-3 bg-tf-bg-secondary rounded-xl p-4">
+                  <TouchableOpacity
+                    key={session.id}
+                    className="mb-3 bg-tf-bg-secondary rounded-xl p-4"
+                    onPress={() =>
+                      router.push(`/(root)/timers/${id}/sessions/${session.id}`)
+                    }
+                    activeOpacity={0.7}
+                  >
                     <View className="flex-row items-center justify-between mb-2">
-                      <Text className="text-tf-text-primary font-semibold text-base">
-                        {formatDate(session.started_at)}
-                      </Text>
+                      <View className="flex-1">
+                        <SessionTimeDisplay
+                          currentIso={session.started_at}
+                          originalIso={session.original_started_at}
+                          formatDateFn={(iso) => formatDate(iso, zone)}
+                        />
+                      </View>
                       {isActive && (
                         <View className="bg-tf-success/20 px-2 py-1 rounded">
                           <Text className="text-tf-success text-xs font-semibold">Active</Text>
@@ -270,15 +285,19 @@ export default function TimerDetailsScreen() {
                         Duration: {formatTime(duration)}
                       </Text>
                       {session.ended_at && (
-                        <Text className="text-tf-text-secondary text-sm">
-                          Ended: {formatDate(session.ended_at)}
-                        </Text>
+                        <View>
+                          <SessionTimeDisplay
+                            currentIso={session.ended_at}
+                            originalIso={session.original_ended_at}
+                            formatDateFn={(iso) => formatDate(iso, zone)}
+                          />
+                        </View>
                       )}
                     </View>
                     {session.note && (
                       <Text className="text-tf-text-secondary text-sm mt-2">{session.note}</Text>
                     )}
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </View>

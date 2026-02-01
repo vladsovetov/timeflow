@@ -1,8 +1,9 @@
-import { View, Text, FlatList, ActivityIndicator } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useGetApiV1TimerSessions, useGetApiV1TimersId } from "@acme/api-client";
-import { DateTime } from "luxon";
+import { useUserTimezone } from "@/src/contexts/AppContext";
 import { parseDateTime, now } from "@/src/lib/date";
+import { SessionTimeDisplay } from "@/src/components/SessionTimeDisplay/SessionTimeDisplay";
 
 function formatTime(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
@@ -18,9 +19,9 @@ function formatTime(seconds: number): string {
   return `${secs}s`;
 }
 
-function formatDate(dateString: string): string {
-  const date = parseDateTime(dateString);
-  const current = now();
+function formatDate(dateString: string, zone: string): string {
+  const date = parseDateTime(dateString, zone);
+  const current = now(zone);
   const today = current.startOf("day");
   const sessionDate = date.startOf("day");
 
@@ -47,14 +48,16 @@ function formatDate(dateString: string): string {
   return date.toLocaleString(formatOptions);
 }
 
-function calculateDuration(startedAt: string, endedAt: string | null): number {
-  const start = parseDateTime(startedAt);
-  const end = endedAt ? parseDateTime(endedAt) : now();
+function calculateDuration(startedAt: string, endedAt: string | null, zone: string): number {
+  const start = parseDateTime(startedAt, zone);
+  const end = endedAt ? parseDateTime(endedAt, zone) : now(zone);
   return Math.max(0, Math.floor(end.diff(start, "seconds").seconds));
 }
 
 export default function TimerSessionsScreen() {
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const zone = useUserTimezone();
 
   const { data: timerData, isLoading: isLoadingTimer } = useGetApiV1TimersId(id ?? "");
   const { data: sessionsData, isLoading: isLoadingSessions, error } = useGetApiV1TimerSessions();
@@ -106,15 +109,25 @@ export default function TimerSessionsScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 24, paddingTop: 8 }}
           renderItem={({ item }) => {
-            const duration = calculateDuration(item.started_at, item.ended_at);
+            const duration = calculateDuration(item.started_at, item.ended_at, zone);
             const isActive = item.ended_at === null;
 
             return (
-              <View className="mb-3 bg-tf-bg-secondary rounded-xl p-4">
+              <TouchableOpacity
+                className="mb-3 bg-tf-bg-secondary rounded-xl p-4"
+                onPress={() =>
+                  router.push(`/(root)/timers/${id}/sessions/${item.id}`)
+                }
+                activeOpacity={0.7}
+              >
                 <View className="flex-row items-center justify-between mb-2">
-                  <Text className="text-tf-text-primary font-semibold text-base">
-                    {formatDate(item.started_at)}
-                  </Text>
+                  <View className="flex-1">
+                    <SessionTimeDisplay
+                      currentIso={item.started_at}
+                      originalIso={item.original_started_at}
+                      formatDateFn={(iso) => formatDate(iso, zone)}
+                    />
+                  </View>
                   {isActive && (
                     <View className="bg-tf-success/20 px-2 py-1 rounded">
                       <Text className="text-tf-success text-xs font-semibold">Active</Text>
@@ -126,15 +139,19 @@ export default function TimerSessionsScreen() {
                     Duration: {formatTime(duration)}
                   </Text>
                   {item.ended_at && (
-                    <Text className="text-tf-text-secondary text-sm">
-                      Ended: {formatDate(item.ended_at)}
-                    </Text>
+                    <View>
+                      <SessionTimeDisplay
+                        currentIso={item.ended_at}
+                        originalIso={item.original_ended_at}
+                        formatDateFn={(iso) => formatDate(iso, zone)}
+                      />
+                    </View>
                   )}
                 </View>
                 {item.note && (
                   <Text className="text-tf-text-secondary text-sm mt-2">{item.note}</Text>
                 )}
-              </View>
+              </TouchableOpacity>
             );
           }}
         />

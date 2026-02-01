@@ -19,12 +19,13 @@ import { DateTime } from "luxon";
 import { Button } from "@/src/components/Button/Button";
 import { Timer } from "@/src/components/Timer/Timer";
 import type { Timer as TimerModel } from "@acme/api-client";
+import { useUserTimezone } from "@/src/contexts/AppContext";
 import { now } from "@/src/lib/date";
 
 const SWIPE_THRESHOLD = 60;
 
-function formatDateLabel(dt: DateTime): string {
-  const today = now().startOf("day");
+function formatDateLabel(dt: DateTime, zone: string): string {
+  const today = now(zone).startOf("day");
   const dayStart = dt.startOf("day");
   const diffDays = dayStart.diff(today, "days").days;
   if (diffDays === 0) return "Today";
@@ -38,12 +39,13 @@ function formatDateLabel(dt: DateTime): string {
 export default function TimersScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [selectedDate, setSelectedDate] = useState(() => now().startOf("day"));
+  const zone = useUserTimezone();
+  const [selectedDate, setSelectedDate] = useState(() => now(zone).startOf("day"));
   const dateParam = useMemo(
     () => selectedDate.toFormat("yyyy-MM-dd"),
     [selectedDate]
   );
-  const isToday = selectedDate.hasSame(now(), "day");
+  const isToday = selectedDate.hasSame(now(zone), "day");
 
   const timersQueryKey = getGetApiV1TimersQueryKey({ date: dateParam });
   const { data, isLoading, error, refetch, dataUpdatedAt } = useQuery({
@@ -72,8 +74,8 @@ export default function TimersScreen() {
     []
   );
   const goToToday = useCallback(
-    () => setSelectedDate(now().startOf("day")),
-    []
+    () => setSelectedDate(now(zone).startOf("day")),
+    [zone]
   );
 
   const panGesture = useMemo(
@@ -168,7 +170,7 @@ export default function TimersScreen() {
             Timers
           </Text>
           <Text className="text-base text-tf-text-secondary mb-3">
-            {formatDateLabel(selectedDate)}
+            {formatDateLabel(selectedDate, zone)}
           </Text>
           <View className="flex-row gap-2">
             <Pressable

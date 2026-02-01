@@ -649,10 +649,50 @@ registry.registerPath({
 });
 
 registry.registerPath({
+  method: "get",
+  path: "/api/v1/timer-sessions/{id}",
+  summary: "Get timer session",
+  description: "Get a single timer session by id",
+  tags: ["TimerSession"],
+  security: [{ bearerAuth: [] }],
+  request: {
+    params: z.object({
+      id: z.string().uuid(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "Timer session",
+      content: {
+        "application/json": {
+          schema: TimerSessionResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Timer session not found",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
   method: "patch",
   path: "/api/v1/timer-sessions/{id}",
   summary: "Update timer session",
-  description: "Update an existing timer session (e.g. set end time when pausing)",
+  description: "Update an existing timer session (e.g. set end time when pausing, or edit start/end times)",
   tags: ["TimerSession"],
   security: [{ bearerAuth: [] }],
   request: {

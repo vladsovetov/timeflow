@@ -5,6 +5,8 @@ import {
   usePatchApiV1TimersId,
   useDeleteApiV1TimersId,
   type UpdateTimerRequest,
+  getGetApiV1TimersQueryKey,
+  getGetApiV1TimersIdQueryKey,
 } from "@acme/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { TimerForm, useTimerForm } from "@/src/components/TimerForm/TimerForm";
@@ -57,10 +59,10 @@ export default function EditTimerScreen() {
   const updateMutation = usePatchApiV1TimersId({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/v1/timers"] });
-        queryClient.invalidateQueries({
-          queryKey: ["/api/v1/timers", id],
-        });
+        queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+        if (id) {
+          queryClient.invalidateQueries({ queryKey: getGetApiV1TimersIdQueryKey(id) });
+        }
         router.back();
       },
     },
@@ -69,7 +71,7 @@ export default function EditTimerScreen() {
   const deleteMutation = useDeleteApiV1TimersId({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/v1/timers"] });
+        queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
         router.back();
       },
     },

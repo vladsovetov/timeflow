@@ -9,6 +9,7 @@ import {
   getGetApiV1TimersQueryKey,
   type Timer as TimerModel,
 } from "@acme/api-client";
+import { useUserTimezone } from "@/src/contexts/AppContext";
 import { parseDateTime, now } from "@/src/lib/date";
 import { syncQueueTimerSessions } from "@/src/lib/sync-queue-timer-sessions";
 
@@ -62,6 +63,7 @@ export function Timer({
 }: TimerProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const zone = useUserTimezone();
 
   const inProgress = timer.timer_session_in_progress;
   const isRunning = inProgress !== null;
@@ -69,7 +71,7 @@ export function Timer({
 
   const baseTime = timer.total_timer_session_time;
   const elapsedWhenRunning = inProgress
-    ? Math.floor(now().diff(parseDateTime(inProgress.started_at), "seconds").seconds)
+    ? Math.floor(now(zone).diff(parseDateTime(inProgress.started_at, zone), "seconds").seconds)
     : 0;
   const initialTime = baseTime + elapsedWhenRunning;
 
@@ -82,10 +84,10 @@ export function Timer({
   useEffect(() => {
     const base = timer.total_timer_session_time;
     const elapsed = inProgress
-      ? Math.floor(now().diff(parseDateTime(inProgress.started_at), "seconds").seconds)
+      ? Math.floor(now(zone).diff(parseDateTime(inProgress.started_at, zone), "seconds").seconds)
       : 0;
     setTime(base + elapsed);
-  }, [timer.total_timer_session_time, inProgress?.id, inProgress?.started_at]);
+  }, [timer.total_timer_session_time, inProgress?.id, inProgress?.started_at, zone]);
 
   useEffect(() => {
     if (isRunning) {
@@ -129,7 +131,7 @@ export function Timer({
     const timerId = timer.id;
     if (timerId == null || timerId === "") return;
 
-    const startedAt = now().toISO() ?? "";
+    const startedAt = now(zone).toISO() ?? "";
     const tempId = `${TEMP_SESSION_PREFIX}${Date.now()}`;
 
     if (timersQueryKey) {
@@ -181,11 +183,11 @@ export function Timer({
     const sid = sessionId;
     if (sid == null || sid === "") return;
 
-    const endedAt = now().toISO() ?? "";
+    const endedAt = now(zone).toISO() ?? "";
 
     if (timersQueryKey) {
       const elapsed = inProgress
-        ? Math.floor(now().diff(parseDateTime(inProgress.started_at), "seconds").seconds)
+        ? Math.floor(now(zone).diff(parseDateTime(inProgress.started_at, zone), "seconds").seconds)
         : 0;
 
       updateTimersCache((timers) =>

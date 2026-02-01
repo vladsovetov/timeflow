@@ -1,11 +1,13 @@
 import { Stack } from "expo-router";
 import { SignedIn, SignedOut } from "@clerk/clerk-expo";
 import { Redirect } from "expo-router";
+import { AppProvider } from "@/src/contexts/AppContext";
 
 export default function RootLayout() {
   return (
     <>
       <SignedIn>
+        <AppProvider>
         <Stack
           screenOptions={{
             headerShown: false,
@@ -68,6 +70,25 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
+            name="timers/[id]/sessions/[sessionId]"
+            options={{
+              presentation: "modal",
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="timers/[id]/sessions/[sessionId]/edit"
+            options={{
+              presentation: "modal",
+              headerShown: true,
+              title: "Edit Session",
+              headerStyle: {
+                backgroundColor: "#121225",
+              },
+              headerTintColor: "#FFFFFF",
+            }}
+          />
+          <Stack.Screen
             name="profile/edit"
             options={{
               presentation: "modal",
@@ -80,6 +101,7 @@ export default function RootLayout() {
             }}
           />
         </Stack>
+        </AppProvider>
       </SignedIn>
       <SignedOut>
         <Redirect href="/(auth)/login" />

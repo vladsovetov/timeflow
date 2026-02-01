@@ -13,6 +13,10 @@ export interface TimerSession {
   started_at: string;
   /** @nullable */
   ended_at: string | null;
+  /** @nullable */
+  original_started_at: string | null;
+  /** @nullable */
+  original_ended_at: string | null;
   source: string;
   /** @nullable */
   note: string | null;

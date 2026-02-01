@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
-import { usePostApiV1Timers } from "@acme/api-client";
+import { usePostApiV1Timers, getGetApiV1TimersQueryKey } from "@acme/api-client";
 import type { CreateTimerRequest } from "@acme/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
@@ -33,7 +33,7 @@ export default function CreateTimerScreen() {
   const createMutation = usePostApiV1Timers({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/v1/timers"] });
+        queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
         router.back();
       },
     },

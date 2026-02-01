@@ -5,7 +5,7 @@ import * as Localization from "expo-localization";
  * Gets the user's timezone from device settings
  * Falls back to system timezone if unavailable
  */
-export function getUserTimezone(): string {
+export function getDeviceTimezone(): string {
   try {
     const timezone = Localization.getCalendars()[0]?.timeZone;
     return timezone || DateTime.now().zoneName || "UTC";
@@ -15,18 +15,23 @@ export function getUserTimezone(): string {
 }
 
 /**
- * Creates a DateTime instance from an ISO string
- * Parses the ISO string (which may be in UTC) and converts it to the user's timezone
+ * Resolves timezone: uses provided zone or falls back to device timezone
  */
-export function parseDateTime(isoString: string): DateTime {
-  // Parse the ISO string (which may include timezone info)
-  // Then convert to user's timezone
-  return DateTime.fromISO(isoString).setZone(getUserTimezone());
+function resolveZone(zone?: string): string {
+  return zone ?? getDeviceTimezone();
 }
 
 /**
- * Gets the current DateTime in the user's timezone
+ * Creates a DateTime instance from an ISO string
+ * Parses the ISO string (which may be in UTC) and converts it to the given timezone (or device timezone)
  */
-export function now(): DateTime {
-  return DateTime.now().setZone(getUserTimezone());
+export function parseDateTime(isoString: string, zone?: string): DateTime {
+  return DateTime.fromISO(isoString).setZone(resolveZone(zone));
+}
+
+/**
+ * Gets the current DateTime in the given timezone (or device timezone)
+ */
+export function now(zone?: string): DateTime {
+  return DateTime.now().setZone(resolveZone(zone));
 }

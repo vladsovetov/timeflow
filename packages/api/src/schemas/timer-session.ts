@@ -10,6 +10,8 @@ export const TimerSessionSchema = z
     timer_id: z.string().uuid().openapi({ example: "550e8400-e29b-41d4-a716-446655440002" }),
     started_at: z.string().datetime().openapi({ example: "2025-01-25T12:00:00.000Z" }),
     ended_at: z.string().datetime().nullable().openapi({ example: null }),
+    original_started_at: z.string().datetime().nullable().openapi({ example: null }),
+    original_ended_at: z.string().datetime().nullable().openapi({ example: null }),
     source: z.string().openapi({ example: "manual" }),
     note: z.string().nullable().openapi({ example: null }),
     is_deleted: z.boolean().openapi({ example: false }),
@@ -43,7 +45,14 @@ export const TimerSessionListResponseSchema = z
 
 export const UpdateTimerSessionRequestSchema = z
   .object({
-    ended_at: z.string().datetime().openapi({ example: "2025-01-25T13:00:00.000Z" }),
+    started_at: z.string().datetime().optional().openapi({
+      example: "2025-01-25T12:00:00.000Z",
+      description: "Edit session start time (user correction). Send with ended_at for full edit.",
+    }),
+    ended_at: z.string().datetime().nullable().optional().openapi({
+      example: "2025-01-25T13:00:00.000Z",
+      description: "End session (if not yet ended) or edit end time. Required when ending; optional for edit.",
+    }),
   })
   .openapi("UpdateTimerSessionRequest");
 

@@ -48,6 +48,8 @@ export interface Database {
     timer_id: string
     started_at: Date
     ended_at: Date | null
+    original_started_at: Date | null
+    original_ended_at: Date | null
     source: string
     note: string | null
     is_deleted: boolean
