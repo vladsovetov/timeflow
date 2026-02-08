@@ -7,10 +7,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/clerk-expo";
 import { configureApiClient } from "@acme/api-client";
 import * as SecureStore from "expo-secure-store";
+import * as WebBrowser from "expo-web-browser";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SyncProvider } from "@/src/contexts/SyncContext";
 import { I18nProvider } from "@/src/i18n";
+import { PostHogProvider } from 'posthog-react-native'
+
+// Complete any pending OAuth session when app opens (e.g. return from Google sign-in).
+WebBrowser.maybeCompleteAuthSession();
 
 const ONE_MONTH_MS = 1000 * 60 * 60 * 24 * 30;
 
@@ -79,6 +84,9 @@ function ApiClientConfigurator({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   return (
+    <PostHogProvider apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY} options={{
+        host: process.env.EXPO_PUBLIC_POSTHOG_HOST,
+    }}>
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <PersistQueryClientProvider
@@ -105,5 +113,6 @@ export default function RootLayout() {
         </PersistQueryClientProvider>
     </GestureHandlerRootView>
     </SafeAreaProvider>
+    </PostHogProvider>
   );
 }
