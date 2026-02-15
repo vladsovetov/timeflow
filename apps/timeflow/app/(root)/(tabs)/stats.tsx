@@ -140,6 +140,23 @@ export default function StatsScreen() {
     return list;
   }, [allSessions, timerById, dayStart, dayEnd, zone]);
 
+  const timelineRange = useMemo(() => {
+    if (sessionsOnDay.length === 0) return null;
+    let startMs = Infinity;
+    let endMs = -Infinity;
+    for (const s of sessionsOnDay) {
+      const { startMs: sStart, endMs: sEnd } = sessionClipToDay(
+        s,
+        dayStart,
+        dayEnd,
+        zone
+      );
+      if (sStart < startMs) startMs = sStart;
+      if (sEnd > endMs) endMs = sEnd;
+    }
+    return { startMs, endMs };
+  }, [sessionsOnDay, dayStart, dayEnd, zone]);
+
   const sleepSeconds = useMemo(() => {
     return timers
       .filter((t) => t.timer_type === "sleep")
@@ -366,16 +383,20 @@ export default function StatsScreen() {
   }
 
   const timelineWidth = Dimensions.get("window").width - 48;
-  const timelineTotalMs = dayEnd.toMillis() - dayStart.toMillis();
+  const timelineStartMs =
+    timelineRange?.startMs ?? dayStart.toMillis();
 
-  const renderTimelineBlocks = (sessions: SessionWithTimer[]) => {
+  const renderTimelineBlocks = (
+    sessions: SessionWithTimer[],
+    range: { startMs: number; endMs: number }
+  ) => {
+    const totalMs = range.endMs - range.startMs;
     return sessions.map((s) => {
       const { startMs, endMs } = sessionClipToDay(s, dayStart, dayEnd, zone);
-      const left =
-        ((startMs - dayStart.toMillis()) / timelineTotalMs) * timelineWidth;
+      const left = totalMs > 0 ? ((startMs - range.startMs) / totalMs) * timelineWidth : 0;
       const width = Math.max(
         4,
-        ((endMs - startMs) / timelineTotalMs) * timelineWidth
+        totalMs > 0 ? ((endMs - startMs) / totalMs) * timelineWidth : 0
       );
       const color =
         s.timer.color ??
@@ -496,7 +517,13 @@ export default function StatsScreen() {
                       className="rounded-lg overflow-hidden bg-tf-bg-tertiary h-6 relative"
                       style={{ width: timelineWidth }}
                     >
-                      {renderTimelineBlocks(sessionsOnDay)}
+                      {renderTimelineBlocks(
+                        sessionsOnDay,
+                        timelineRange ?? {
+                          startMs: dayStart.toMillis(),
+                          endMs: dayEnd.toMillis(),
+                        }
+                      )}
                     </View>
                   </View>
                   {groupByCategory
@@ -512,7 +539,13 @@ export default function StatsScreen() {
                             className="rounded-lg overflow-hidden bg-tf-bg-tertiary h-6 relative"
                             style={{ width: timelineWidth }}
                           >
-                            {renderTimelineBlocks(sessions)}
+                            {renderTimelineBlocks(
+                              sessions,
+                              timelineRange ?? {
+                                startMs: dayStart.toMillis(),
+                                endMs: dayEnd.toMillis(),
+                              }
+                            )}
                           </View>
                         </View>
                       ))
@@ -529,13 +562,28 @@ export default function StatsScreen() {
                             className="rounded-lg overflow-hidden bg-tf-bg-tertiary h-6 relative"
                             style={{ width: timelineWidth }}
                           >
-                            {renderTimelineBlocks(sessions)}
+                            {renderTimelineBlocks(
+                              sessions,
+                              timelineRange ?? {
+                                startMs: dayStart.toMillis(),
+                                endMs: dayEnd.toMillis(),
+                              }
+                            )}
                           </View>
                         </View>
                       ))}
                   <View className="flex-row justify-between mt-1">
-                    <Text className="text-xs text-tf-text-muted">0:00</Text>
-                    <Text className="text-xs text-tf-text-muted">24:00</Text>
+                    <Text className="text-xs text-tf-text-muted">
+                      {DateTime.fromMillis(timelineStartMs, { zone }).toFormat(
+                        "HH:mm"
+                      )}
+                    </Text>
+                    <Text className="text-xs text-tf-text-muted">
+                      {DateTime.fromMillis(
+                        timelineRange?.endMs ?? dayEnd.toMillis(),
+                        { zone }
+                      ).toFormat("HH:mm")}
+                    </Text>
                   </View>
                 </View>
               )}
