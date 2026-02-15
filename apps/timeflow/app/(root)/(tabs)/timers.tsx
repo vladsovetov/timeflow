@@ -223,7 +223,7 @@ export default function TimersScreen() {
 
   const fixedFooter = activeTimer != null ? (
     <View
-      className="px-6 pb-6 pt-4 bg-tf-bg-accent rounded-2xl"
+      className="px-6 py-4 bg-tf-bg-tertiary rounded-2xl border-2 border-tf-bg-accent"
     >
       <Timer
         timer={activeTimer}
