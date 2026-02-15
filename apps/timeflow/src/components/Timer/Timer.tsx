@@ -83,26 +83,34 @@ export function Timer({
   const elapsedWhenRunning = inProgress
     ? Math.floor(now(zone).diff(parseDateTime(inProgress.started_at, zone), "seconds").seconds)
     : 0;
-  const initialTime = baseTime + elapsedWhenRunning;
 
-  const [time, setTime] = useState(initialTime);
+  const [staticTime, setStaticTime] = useState(baseTime + elapsedWhenRunning);
+  const [tick, setTick] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const createMutation = usePostApiV1TimerSessions();
   const patchMutation = usePatchApiV1TimerSessionsId();
+
+  const time =
+    isRunning && inProgress
+      ? baseTime +
+        Math.floor(
+          now(zone).diff(parseDateTime(inProgress.started_at, zone), "seconds").seconds
+        )
+      : staticTime;
 
   useEffect(() => {
     const base = timer.total_timer_session_time;
     const elapsed = inProgress
       ? Math.floor(now(zone).diff(parseDateTime(inProgress.started_at, zone), "seconds").seconds)
       : 0;
-    setTime(base + elapsed);
+    setStaticTime(base + elapsed);
   }, [timer.total_timer_session_time, inProgress?.id, inProgress?.started_at, zone]);
 
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = setInterval(() => {
-        setTime((prev: number) => prev + 1);
+        setTick((prev) => prev + 1);
       }, 1000);
     } else {
       if (intervalRef.current) {

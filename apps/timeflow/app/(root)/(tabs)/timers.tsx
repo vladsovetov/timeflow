@@ -30,8 +30,11 @@ import { useUserTimezone } from "@/src/contexts/AppContext";
 import { now } from "@/src/lib/date";
 import { useTranslation } from "@/src/i18n";
 import { DateNavigator } from "@/src/components/DateNavigator/DateNavigator";
+import { LinearGradient } from "expo-linear-gradient";
 
 const SWIPE_THRESHOLD = 60;
+
+const ACTIVE_TIMER_FOOTER_GRADIENT = ["rgba(124, 58, 237, 0.12)", "#5444", "#B14593"] as const;
 
 export default function TimersScreen() {
   const router = useRouter();
@@ -184,7 +187,9 @@ export default function TimersScreen() {
   }
 
   const fixedFooter = activeTimer != null ? (
-    <View className="px-6 pb-6 pt-4 bg-tf-bg-primary">
+    <View
+      className="px-6 pb-6 pt-4 bg-tf-bg-accent rounded-2xl"
+    >
       <Timer
         timer={activeTimer}
         timersQueryKey={timersQueryKey}
