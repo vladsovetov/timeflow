@@ -1,10 +1,10 @@
 import "../global.css";
-import { Slot } from "expo-router";
+import { Slot, usePathname } from "expo-router";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/clerk-expo";
+import { ClerkProvider, ClerkLoaded, useAuth, useUser } from "@clerk/clerk-expo";
 import { configureApiClient } from "@acme/api-client";
 import * as SecureStore from "expo-secure-store";
 import * as WebBrowser from "expo-web-browser";
@@ -12,7 +12,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SyncProvider } from "@/src/contexts/SyncContext";
 import { I18nProvider } from "@/src/i18n";
-import { PostHogProvider } from 'posthog-react-native'
+import { PostHogProvider, usePostHog } from "posthog-react-native";
+import { useEffect } from "react";
 
 // Complete any pending OAuth session when app opens (e.g. return from Google sign-in).
 WebBrowser.maybeCompleteAuthSession();
@@ -82,6 +83,43 @@ function ApiClientConfigurator({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Identifies the signed-in user with PostHog using common Clerk metadata
+function PostHogUserIdentify({ children }: { children: React.ReactNode }) {
+  const posthog = usePostHog();
+  const { user, isSignedIn } = useUser();
+
+  useEffect(() => {
+    if (!posthog || !isSignedIn || !user) return;
+    const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || undefined;
+    const traits: Record<string, string> = {};
+    const email = user.primaryEmailAddress?.emailAddress;
+    if (email) traits.email = email;
+    if (name) traits.name = name;
+    if (user.firstName) traits.first_name = user.firstName;
+    if (user.lastName) traits.last_name = user.lastName;
+    if (user.createdAt) traits.created_at = String(user.createdAt);
+    if (user.lastSignInAt) traits.last_sign_in_at = String(user.lastSignInAt);
+    if (user.imageUrl) traits.image_url = user.imageUrl;
+    posthog.identify(user.id, traits);
+  }, [posthog, isSignedIn, user]);
+
+  return <>{children}</>;
+}
+
+// Captures a PostHog screen event whenever the route changes
+function PostHogScreenTracker() {
+  const posthog = usePostHog();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (posthog && pathname) {
+      posthog.screen(pathname, { $screen_name: pathname });
+    }
+  }, [posthog, pathname]);
+
+  return null;
+}
+
 export default function RootLayout() {
   return (
     <PostHogProvider apiKey={process.env.EXPO_PUBLIC_POSTHOG_API_KEY} options={{
@@ -102,11 +140,14 @@ export default function RootLayout() {
           >
             <I18nProvider>
               <ClerkLoaded>
-                <ApiClientConfigurator>
-                  <SyncProvider>
-                    <Slot />
-                  </SyncProvider>
-                </ApiClientConfigurator>
+                <PostHogUserIdentify>
+                  <PostHogScreenTracker />
+                  <ApiClientConfigurator>
+                    <SyncProvider>
+                      <Slot />
+                    </SyncProvider>
+                  </ApiClientConfigurator>
+                </PostHogUserIdentify>
               </ClerkLoaded>
             </I18nProvider>
           </ClerkProvider>

@@ -3,10 +3,10 @@ import { useEffect, useState, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePostHog } from "posthog-react-native";
 import {
   usePostApiV1TimerSessions,
   usePatchApiV1TimerSessionsId,
-  getGetApiV1TimersQueryKey,
   type Timer as TimerModel,
 } from "@acme/api-client";
 import { useUserTimezone } from "@/src/contexts/AppContext";
@@ -71,6 +71,7 @@ export function Timer({
 }: TimerProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const posthog = usePostHog();
   const zone = useUserTimezone();
   const { t } = useTranslation();
 
@@ -151,6 +152,11 @@ export function Timer({
     const startedAt = now(zone).toISO() ?? "";
     const tempId = `${TEMP_SESSION_PREFIX}${now(zone).toMillis()}`;
 
+    posthog?.capture("timer_started", {
+      timer_id: timerId,
+      start: startedAt,
+    });
+
     if (timersQueryKey) {
       updateTimersCache((timers) =>
         timers.map((t) => {
@@ -212,11 +218,20 @@ export function Timer({
     if (sid == null || sid === "") return;
 
     const endedAt = now(zone).toISO() ?? "";
+    const startedAt = inProgress?.started_at ?? endedAt;
+    const durationSeconds = inProgress
+      ? Math.floor(now(zone).diff(parseDateTime(inProgress.started_at, zone), "seconds").seconds)
+      : 0;
+
+    posthog?.capture("timer_paused", {
+      timer_id: timer.id,
+      start: startedAt,
+      end: endedAt,
+      duration_seconds: durationSeconds,
+    });
 
     if (timersQueryKey) {
-      const elapsed = inProgress
-        ? Math.floor(now(zone).diff(parseDateTime(inProgress.started_at, zone), "seconds").seconds)
-        : 0;
+      const elapsed = durationSeconds;
 
       updateTimersCache((timers) =>
         timers.map((t) => {

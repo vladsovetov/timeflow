@@ -42,7 +42,6 @@ export default function ProfileScreen() {
   }
 
   const profile = data?.status === 200 ? data.data : null;
-  const userId = profile?.userId ?? null;
 
   return (
     <ScrollView
@@ -58,13 +57,6 @@ export default function ProfileScreen() {
       </View>
 
       <View className="px-6">
-        <View className="bg-tf-bg-secondary border border-tf-bg-tertiary rounded-xl p-6 mb-4">
-          <Text className="text-tf-text-secondary text-sm mb-2">{t("userId")}</Text>
-          <Text className="text-tf-text-primary text-base font-mono">
-            {userId ?? t("na")}
-          </Text>
-        </View>
-
         {(profile?.first_name || profile?.last_name || profile?.timezone) && (
           <View className="bg-tf-bg-secondary border border-tf-bg-tertiary rounded-xl p-6 mb-4">
             {profile.first_name && (

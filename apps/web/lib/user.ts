@@ -1,3 +1,4 @@
+import { clerkClient } from "@clerk/nextjs/server";
 import { db, sql } from "@/db";
 
 export async function getOrCreateUser(
@@ -12,12 +13,25 @@ export async function getOrCreateUser(
 
   if (existing) return { id: existing.id };
 
+  let firstName: string | null = null;
+  let lastName: string | null = null;
+  try {
+    const client = await clerkClient();
+    const clerkUser = await client.users.getUser(clerkUserId);
+    firstName = clerkUser.firstName?.trim() || null;
+    lastName = clerkUser.lastName?.trim() || null;
+  } catch {
+    // Proceed without SSO names if Clerk lookup fails
+  }
+
   try {
     const row = await db
       .insertInto("user")
       .values({
         id: sql`gen_random_uuid()`,
         clerk_user_id: clerkUserId,
+        first_name: firstName,
+        last_name: lastName,
         is_deleted: false,
         created_at: sql`now()`,
         updated_at: sql`now()`,
