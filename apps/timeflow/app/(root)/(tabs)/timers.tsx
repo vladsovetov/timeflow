@@ -7,7 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -28,6 +28,7 @@ import { Timer } from "@/src/components/Timer/Timer";
 import type { Timer as TimerModel } from "@acme/api-client";
 import { useUserTimezone } from "@/src/contexts/AppContext";
 import { now } from "@/src/lib/date";
+import { getPendingInProgressSessions } from "@/src/lib/sync-queue-timer-sessions";
 import { useTranslation } from "@/src/i18n";
 import { DateNavigator } from "@/src/components/DateNavigator/DateNavigator";
 import { LinearGradient } from "expo-linear-gradient";
@@ -61,10 +62,44 @@ export default function TimersScreen() {
     [data]
   );
   const [timers, setTimers] = useState<TimerModel[]>([]);
+  const [pendingInProgress, setPendingInProgress] = useState<
+    Map<string, { started_at: string; tempId: string }>
+  >(new Map());
 
   useEffect(() => {
     setTimers(timersFromApi);
   }, [timersFromApi]);
+
+  const loadPendingSessions = useCallback(() => {
+    getPendingInProgressSessions().then(setPendingInProgress);
+  }, []);
+
+  useEffect(() => {
+    if (timersFromApi.length > 0 || data != null) {
+      loadPendingSessions();
+    }
+  }, [timersFromApi.length, data, loadPendingSessions]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPendingSessions();
+    }, [loadPendingSessions])
+  );
+
+  const displayedTimers = useMemo(() => {
+    if (!isToday || pendingInProgress.size === 0) return timers;
+    return timers.map((t) => {
+      if (t.timer_session_in_progress) return t;
+      const p = pendingInProgress.get(t.id);
+      if (p) {
+        return {
+          ...t,
+          timer_session_in_progress: { id: p.tempId, started_at: p.started_at },
+        };
+      }
+      return t;
+    });
+  }, [timers, isToday, pendingInProgress]);
 
   const goToPrevDay = useCallback(
     () => setSelectedDate((d) => d.minus({ days: 1 })),
@@ -123,8 +158,8 @@ export default function TimersScreen() {
    
 
   const activeTimer = useMemo(
-    () => timers.find((t) => t.timer_session_in_progress != null) ?? null,
-    [timers]
+    () => displayedTimers.find((t) => t.timer_session_in_progress != null) ?? null,
+    [displayedTimers]
   );
 
   const handleDragEnd = useCallback(
@@ -222,7 +257,7 @@ export default function TimersScreen() {
           />
         </View>
 
-        {timers.length === 0 ? (
+        {displayedTimers.length === 0 ? (
           <View className="flex-1">
             <ScrollView
               className="flex-1"
@@ -236,7 +271,7 @@ export default function TimersScreen() {
         ) : (
           <View className="flex-1">
             <DraggableFlatList
-              data={timers}
+              data={displayedTimers}
               keyExtractor={(item: TimerModel) => item.id}
               onDragEnd={handleDragEnd}
               renderItem={renderItem}

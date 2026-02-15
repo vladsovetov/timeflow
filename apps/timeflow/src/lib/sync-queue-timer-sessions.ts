@@ -82,3 +82,22 @@ export function isTimerSessionOp(
 ): op is SyncOp<CreateSessionPayload | EndSessionPayload> {
   return op.type === CREATE_SESSION || op.type === END_SESSION;
 }
+
+/**
+ * Returns timer ids that have a pending create-session op with no endedAt (in-progress overlay for offline-first).
+ */
+export async function getPendingInProgressSessions(): Promise<
+  Map<string, { started_at: string; tempId: string }>
+> {
+  const ops = await syncQueue.getAll();
+  const map = new Map<string, { started_at: string; tempId: string }>();
+  for (const op of ops) {
+    if (op.type === CREATE_SESSION) {
+      const p = op.payload as CreateSessionPayload;
+      if (p.endedAt == null) {
+        map.set(p.timerId, { started_at: p.startedAt, tempId: `pending-${op.id}` });
+      }
+    }
+  }
+  return map;
+}

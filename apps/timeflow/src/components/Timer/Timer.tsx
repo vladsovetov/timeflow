@@ -7,7 +7,6 @@ import {
   usePostApiV1TimerSessions,
   usePatchApiV1TimerSessionsId,
   getGetApiV1TimersQueryKey,
-  getGetApiV1TimerSessionsQueryKey,
   type Timer as TimerModel,
 } from "@acme/api-client";
 import { useUserTimezone } from "@/src/contexts/AppContext";
@@ -179,9 +178,22 @@ export function Timer({
       },
       {
         onSuccess: (res) => {
-          if (res.status === 201) {
-            queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
-            queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
+          if (res.status === 201 && timersQueryKey && res.data?.data) {
+            const session = res.data.data;
+            updateTimersCache((timers) =>
+              timers.map((t) => {
+                if (t.id === timerId && t.timer_session_in_progress?.id === tempId) {
+                  return {
+                    ...t,
+                    timer_session_in_progress: {
+                      id: session.id,
+                      started_at: session.started_at,
+                    },
+                  };
+                }
+                return t;
+              })
+            );
           }
         },
         onError: () => {
@@ -190,10 +202,6 @@ export function Timer({
             startedAt,
             endedAt: null,
           });
-        },
-        onSettled: () => {
-          queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
         },
       }
     );
@@ -242,19 +250,11 @@ export function Timer({
         data: { ended_at: endedAt },
       },
       {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
-        },
         onError: () => {
           syncQueueTimerSessions.enqueueEndSession({
             sessionId: sid,
             endedAt,
           });
-        },
-        onSettled: () => {
-          queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
         },
       }
     );
@@ -342,7 +342,8 @@ export function Timer({
           {isRunning ? (
             <TouchableOpacity
               onPress={handlePause}
-              className="w-14 h-14 rounded-full items-center justify-center"
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              className="w-16 h-16 rounded-full items-center justify-center"
               style={{ backgroundColor: accentColor }}
             >
               <Ionicons name="pause" size={30} color="#ffffff" />
@@ -350,7 +351,8 @@ export function Timer({
           ) : (
             <TouchableOpacity
               onPress={handleStart}
-              className="w-14 h-14 rounded-full items-center justify-center"
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              className="w-16 h-16 rounded-full items-center justify-center"
               style={{ backgroundColor: accentColor }}
             >
               <Ionicons name="play" size={30} color="#ffffff" />
