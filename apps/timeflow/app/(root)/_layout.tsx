@@ -2,12 +2,14 @@ import { Stack } from "expo-router";
 import { SignedIn, SignedOut } from "@clerk/clerk-expo";
 import { Redirect } from "expo-router";
 import { AppProvider } from "@/src/contexts/AppContext";
+import { ActiveTimerNotificationSync } from "@/src/components/ActiveTimerNotificationSync/ActiveTimerNotificationSync";
 
 export default function RootLayout() {
   return (
     <>
       <SignedIn>
         <AppProvider>
+        <ActiveTimerNotificationSync />
         <Stack
           screenOptions={{
             headerShown: false,

@@ -14,6 +14,10 @@ import {
   pendingSessionLocalId,
 } from "@/src/lib/sync-queue-timer-sessions";
 import { syncQueue } from "@/src/lib/sync-queue";
+import {
+  enqueuePauseTimerSessionOnServer,
+  isLocalPendingSessionId,
+} from "@/src/lib/timer-session/pause-timer-session";
 import { DurationDisplay } from "@/src/components/DurationDisplay/DurationDisplay";
 
 const TIMER_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -41,11 +45,6 @@ interface TimerProps {
   readOnly?: boolean;
   /** When true, applies enhanced visual styling to highlight the active/running timer. */
   isActive?: boolean;
-}
-
-/** Session id is not yet persisted on the server (optimistic or queued). */
-function isLocalPendingSessionId(id: string | null): boolean {
-  return id != null && (id.startsWith("temp-") || id.startsWith("pending-"));
 }
 
 /** Returns white or dark text color for contrast on the given hex background. */
@@ -216,23 +215,12 @@ export function Timer({
       onPause?.();
     }
 
-    if (isLocalPendingSessionId(sid)) {
-      const merged = await syncQueueTimerSessions.updateCreateSessionWithEndedAt(timer.id, endedAt);
-      if (merged) return;
-      await syncQueueTimerSessions.enqueueCreateSession({
-        timerId: timer.id,
-        startedAt: inProgress?.started_at ?? endedAt,
-        endedAt,
-      });
-      void syncQueue.process();
-      return;
-    }
-
-    await syncQueueTimerSessions.enqueueEndSession({
+    await enqueuePauseTimerSessionOnServer({
+      timerId: timer.id,
       sessionId: sid,
+      startedAt: inProgress?.started_at ?? endedAt,
       endedAt,
     });
-    void syncQueue.process();
   }
 
   const iconName = TIMER_TYPE_ICONS[timer.timer_type] || TIMER_TYPE_ICONS.other;

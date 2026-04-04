@@ -65,6 +65,12 @@
       ],
       "expo-web-browser",
       [
+        "expo-notifications",
+        {
+          "defaultChannel": "active-timer"
+        }
+      ],
+      [
         "expo-updates",
         {
           "username": null

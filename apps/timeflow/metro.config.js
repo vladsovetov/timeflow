@@ -20,6 +20,25 @@ config.resolver.nodeModulesPaths = [
 // Custom resolver to handle .js imports in TypeScript files
 const originalResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // gifted-charts-core publishes ESM-style extensionless relative re-exports under dist/
+  // (e.g. `./BarChart/Animated2DWithGradient`). Metro often fails to resolve those paths.
+  const origin = context.originModulePath;
+  if (
+    origin &&
+    moduleName.startsWith(".") &&
+    path.extname(moduleName) === "" &&
+    origin.replace(/\\/g, "/").includes("gifted-charts-core/dist/")
+  ) {
+    const originDir = path.dirname(origin);
+    const absBase = path.resolve(originDir, moduleName);
+    const candidates = [absBase + ".js", path.join(absBase, "index.js")];
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        return { filePath: candidate, type: "sourceFile" };
+      }
+    }
+  }
+
   // Handle .js imports in TypeScript files (relative imports)
   if (
     moduleName.startsWith(".") &&

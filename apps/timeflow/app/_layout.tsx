@@ -1,6 +1,6 @@
 import "../global.css";
+import "@/src/lib/notifications/register-notifications";
 import { Slot, usePathname } from "expo-router";
-import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -14,21 +14,12 @@ import { SyncProvider } from "@/src/contexts/SyncContext";
 import { I18nProvider } from "@/src/i18n";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
 import { useEffect } from "react";
+import { queryClient } from "@/src/lib/query-client";
 
 // Complete any pending OAuth session when app opens (e.g. return from Google sign-in).
 WebBrowser.maybeCompleteAuthSession();
 
 const ONE_MONTH_MS = 1000 * 60 * 60 * 24 * 30;
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 2,
-      staleTime: 1000 * 60, // 1 minute
-      gcTime: ONE_MONTH_MS,
-    },
-  },
-});
 
 const asyncStoragePersister = createAsyncStoragePersister({
   storage: AsyncStorage,
