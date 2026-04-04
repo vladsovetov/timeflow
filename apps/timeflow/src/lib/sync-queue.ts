@@ -2,7 +2,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import PQueue from "p-queue";
 import { DateTime } from "luxon";
 
-const STORAGE_KEY = "timeflow_sync_queue";
+const STORAGE_KEY_PREFIX = "timeflow_sync_queue";
+
+let activeUserId: string | null = null;
+
+function syncQueueStorageKey(): string {
+  const suffix = activeUserId ?? "signed-out";
+  return `${STORAGE_KEY_PREFIX}_${suffix}`;
+}
 
 export type SyncOp<T = unknown> = {
   id: string;
@@ -20,7 +27,7 @@ function generateId(): string {
 
 async function loadOps(): Promise<SyncOp[]> {
   try {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    const raw = await AsyncStorage.getItem(syncQueueStorageKey());
     if (!raw) return [];
     const parsed = JSON.parse(raw) as SyncOp[];
     return Array.isArray(parsed) ? parsed : [];
@@ -30,13 +37,26 @@ async function loadOps(): Promise<SyncOp[]> {
 }
 
 async function saveOps(ops: SyncOp[]): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(ops));
+  await AsyncStorage.setItem(syncQueueStorageKey(), JSON.stringify(ops));
 }
 
 const queue = new PQueue({ concurrency: 1, timeout: 30000 });
 
 /** Prevents concurrent duplicate API calls for the same op id. */
 const processingOpIds = new Set<string>();
+
+/**
+ * Call when the signed-in Clerk user changes (including sign-out).
+ * Uses a per-user AsyncStorage key and clears in-memory queue state so ops from
+ * the previous user are not replayed under the new session.
+ */
+export function setSyncQueueUserId(clerkUserId: string | null | undefined): void {
+  const next = clerkUserId ?? null;
+  if (activeUserId === next) return;
+  activeUserId = next;
+  queue.clear();
+  processingOpIds.clear();
+}
 
 let onProcessedCallback: ((op: SyncOp) => void) | undefined;
 

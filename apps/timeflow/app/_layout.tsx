@@ -13,17 +13,56 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SyncProvider } from "@/src/contexts/SyncContext";
 import { I18nProvider } from "@/src/i18n";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { queryClient } from "@/src/lib/query-client";
+import { setSyncQueueUserId } from "@/src/lib/sync-queue";
 
 // Complete any pending OAuth session when app opens (e.g. return from Google sign-in).
 WebBrowser.maybeCompleteAuthSession();
 
 const ONE_MONTH_MS = 1000 * 60 * 60 * 24 * 30;
 
-const asyncStoragePersister = createAsyncStoragePersister({
-  storage: AsyncStorage,
-});
+/** React Query + sync queue persistence scoped per Clerk user so account switches do not reuse another user's cache. */
+function AuthScopedPersistQueryClient({ children }: { children: React.ReactNode }) {
+  const { userId } = useAuth();
+  const persistenceKey = userId ?? "signed-out";
+  const prevPersistenceKeyRef = useRef<string | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    setSyncQueueUserId(userId ?? null);
+  }, [userId]);
+
+  useLayoutEffect(() => {
+    const prev = prevPersistenceKeyRef.current;
+    prevPersistenceKeyRef.current = persistenceKey;
+    if (prev === undefined) return;
+    if (prev !== persistenceKey) {
+      queryClient.clear();
+    }
+  }, [persistenceKey]);
+
+  const persister = useMemo(
+    () =>
+      createAsyncStoragePersister({
+        storage: AsyncStorage,
+        key: `timeflow-react-query-${persistenceKey}`,
+      }),
+    [persistenceKey]
+  );
+
+  return (
+    <PersistQueryClientProvider
+      key={persistenceKey}
+      client={queryClient}
+      persistOptions={{
+        persister,
+        maxAge: ONE_MONTH_MS,
+      }}
+    >
+      {children}
+    </PersistQueryClientProvider>
+  );
+}
 
 // Token cache for Clerk using SecureStore
 const tokenCache = {
@@ -118,31 +157,25 @@ export default function RootLayout() {
     }}>
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <PersistQueryClientProvider
-          client={queryClient}
-          persistOptions={{
-            persister: asyncStoragePersister,
-            maxAge: ONE_MONTH_MS,
-          }}
-        >
           <ClerkProvider
             publishableKey={clerkPublishableKey ?? ""}
             tokenCache={tokenCache}
           >
             <I18nProvider>
               <ClerkLoaded>
-                <PostHogUserIdentify>
-                  <PostHogScreenTracker />
-                  <ApiClientConfigurator>
-                    <SyncProvider>
-                      <Slot />
-                    </SyncProvider>
-                  </ApiClientConfigurator>
-                </PostHogUserIdentify>
+                <AuthScopedPersistQueryClient>
+                  <PostHogUserIdentify>
+                    <PostHogScreenTracker />
+                    <ApiClientConfigurator>
+                      <SyncProvider>
+                        <Slot />
+                      </SyncProvider>
+                    </ApiClientConfigurator>
+                  </PostHogUserIdentify>
+                </AuthScopedPersistQueryClient>
               </ClerkLoaded>
             </I18nProvider>
           </ClerkProvider>
-        </PersistQueryClientProvider>
     </GestureHandlerRootView>
     </SafeAreaProvider>
     </PostHogProvider>

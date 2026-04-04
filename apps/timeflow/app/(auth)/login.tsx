@@ -56,6 +56,7 @@ export default function LoginScreen() {
 
     try {
       const signInAttempt = await signIn.create({
+        strategy: "password",
         identifier: emailAddress,
         password,
       });
