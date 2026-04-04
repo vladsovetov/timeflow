@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getApiV1Timers, getGetApiV1TimersQueryKey } from "@acme/api-client";
 import type { Timer as TimerModel } from "@acme/api-client";
 import { useUserTimezone } from "@/src/contexts/AppContext";
-import { now, parseDateTime } from "@/src/lib/date";
+import { formatDurationParts, now, parseDateTime } from "@/src/lib/date";
 import { getPendingInProgressSessions } from "@/src/lib/sync-queue-timer-sessions";
 import {
   clearActiveTimerNotificationSnapshot,
@@ -19,16 +19,21 @@ import {
 } from "@/src/lib/notifications/active-timer-notification-constants";
 import { consumeColdStartNotificationPauseResponse } from "@/src/lib/notifications/register-notifications";
 
-const BODY_REFRESH_MS = 30_000;
+/** Match in-app `DurationDisplay` tick rate while a session is running. */
+const BODY_REFRESH_MS = 1000;
 
-function formatElapsedBody(startedAt: string, zone: string): string {
-  const sec = Math.max(
+function formatRunningTimerBody(
+  baseTotalSeconds: number,
+  startedAt: string,
+  zone: string
+): string {
+  const elapsed = Math.max(
     0,
     Math.floor(now(zone).diff(parseDateTime(startedAt, zone), "seconds").seconds)
   );
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")} elapsed — Pause to stop`;
+  const total = Math.max(0, Math.floor(baseTotalSeconds)) + elapsed;
+  const { main, seconds: secondsPart } = formatDurationParts(total);
+  return `${main}${secondsPart} — Pause to stop`;
 }
 
 function notificationPermissionOk(
@@ -150,6 +155,7 @@ export function ActiveTimerNotificationSync() {
         if (getSuppressActiveTimerNotificationSync()) return;
 
         const timerName = activeTimer.name?.trim() ? activeTimer.name : "Timer";
+        const baseTotalSeconds = activeTimer.total_timer_session_time ?? 0;
 
         setActiveTimerNotificationSnapshot({
           timerId: activeTimer.id,
@@ -166,7 +172,7 @@ export function ActiveTimerNotificationSync() {
           identifier: ACTIVE_TIMER_NOTIFICATION_ID,
           content: {
             title: timerName,
-            body: formatElapsedBody(inProgress.started_at, zone),
+            body: formatRunningTimerBody(baseTotalSeconds, inProgress.started_at, zone),
             categoryIdentifier: ACTIVE_TIMER_CATEGORY_ID,
             sticky: true,
             data: {
@@ -191,6 +197,7 @@ export function ActiveTimerNotificationSync() {
     activeTimer?.name,
     activeTimer?.timer_session_in_progress?.id,
     activeTimer?.timer_session_in_progress?.started_at,
+    activeTimer?.total_timer_session_time,
     zone,
     bodyTick,
   ]);

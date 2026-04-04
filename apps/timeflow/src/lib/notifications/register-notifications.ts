@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
-import { getGetApiV1TimersQueryKey } from "@acme/api-client";
-import { now } from "@/src/lib/date";
+import { getApiV1Timers, getGetApiV1TimersQueryKey } from "@acme/api-client";
+import { now, parseDateTime } from "@/src/lib/date";
 import { queryClient } from "@/src/lib/query-client";
 import { enqueuePauseTimerSessionOnServer } from "@/src/lib/timer-session/pause-timer-session";
 import {
@@ -16,6 +16,42 @@ import {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+type TimersQueryData = Awaited<ReturnType<typeof getApiV1Timers>>;
+
+function applyOptimisticPauseToTimersQueries(input: {
+  timerId: string;
+  startedAt: string;
+  zone: string;
+}): void {
+  const durationSeconds = Math.max(
+    0,
+    Math.floor(
+      now(input.zone).diff(parseDateTime(input.startedAt, input.zone), "seconds").seconds
+    )
+  );
+  queryClient.setQueriesData<TimersQueryData>(
+    { queryKey: getGetApiV1TimersQueryKey() },
+    (old) => {
+      if (old == null || old.status !== 200) return old;
+      return {
+        ...old,
+        data: {
+          ...old.data,
+          data: old.data.data.map((t) =>
+            t.id === input.timerId
+              ? {
+                  ...t,
+                  timer_session_in_progress: null,
+                  total_timer_session_time: t.total_timer_session_time + durationSeconds,
+                }
+              : t
+          ),
+        },
+      };
+    }
+  );
 }
 
 let routingRegistered = false;
@@ -46,6 +82,8 @@ async function handleNotificationPauseResponse(
   pauseFromNotificationInFlight = true;
   setSuppressActiveTimerNotificationSync(true);
   try {
+    applyOptimisticPauseToTimersQueries({ timerId, startedAt, zone });
+
     clearActiveTimerNotificationSnapshot();
     try {
       await Notifications.cancelScheduledNotificationAsync(ACTIVE_TIMER_NOTIFICATION_ID);

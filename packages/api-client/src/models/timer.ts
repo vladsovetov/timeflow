@@ -32,5 +32,6 @@ export interface Timer {
   updated_by: string | null;
   /** Total timer session time for current day in seconds */
   total_timer_session_time: number;
-  timer_session_in_progress: TimerTimerSessionInProgress;
+  /** Null when no session is running for this timer */
+  timer_session_in_progress: TimerTimerSessionInProgress | null;
 }
