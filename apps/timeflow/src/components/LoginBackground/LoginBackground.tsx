@@ -35,7 +35,7 @@ export function LoginBackground({ className }: LoginBackgroundProps) {
       />
 
       <View
-        className="absolute left-0 right-0 top-[180px] z-10 items-center"
+        className="absolute left-0 right-0 top-[10%] z-10 items-center"
       >
         <Image
           source={lockSource}
