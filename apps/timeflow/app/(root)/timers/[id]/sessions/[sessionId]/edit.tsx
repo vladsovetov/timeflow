@@ -4,7 +4,6 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   useGetApiV1TimerSessionsId,
   useGetApiV1TimerSessions,
-  usePatchApiV1TimerSessionsId,
   getGetApiV1TimerSessionsQueryKey,
   getGetApiV1TimerSessionsIdQueryKey,
   getGetApiV1TimersQueryKey,
@@ -21,6 +20,8 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useUserTimezone } from "@/src/contexts/AppContext";
 import { parseDateTime } from "@/src/lib/date";
 import { useTranslation } from "@/src/i18n";
+import { syncQueueTimerSessions } from "@/src/lib/sync-queue-timer-sessions";
+import { syncQueue } from "@/src/lib/sync-queue";
 
 const MAX_END_ISO = "9999-12-31T23:59:59.999Z";
 
@@ -123,7 +124,6 @@ export default function EditSessionScreen() {
     watch,
     setValue,
     reset,
-    setError,
     formState: { errors, isSubmitting },
   } = useForm<EditSessionFormValues>({
     defaultValues: { started_at: "", ended_at: null },
@@ -142,28 +142,6 @@ export default function EditSessionScreen() {
     }
   }, [session, reset]);
 
-  const updateMutation = usePatchApiV1TimerSessionsId({
-    mutation: {
-      onSuccess: (result) => {
-        // API returns 409 on overlap; generated client types may not include 409 until spec is regenerated
-        const statusNum: number = result.status;
-        if (statusNum === 409) {
-          setError("root", { message: t("sessionOverlapsExisting") });
-          return;
-        }
-        queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
-        queryClient.invalidateQueries({
-          queryKey: getGetApiV1TimerSessionsIdQueryKey(sessionId ?? ""),
-        });
-        queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
-        if (id) {
-          queryClient.invalidateQueries({ queryKey: getGetApiV1TimersIdQueryKey(id) });
-        }
-        router.back();
-      },
-    },
-  });
-
   const onPickerConfirm = useCallback(
     (date: Date) => {
       if (pickerMode === "start" && startedAt) {
@@ -180,18 +158,30 @@ export default function EditSessionScreen() {
   );
 
   const onSubmit = useCallback(
-    (values: EditSessionFormValues) => {
+    async (values: EditSessionFormValues) => {
       const startedIso = values.started_at;
       const endedIso = values.ended_at;
-      updateMutation.mutate({
-        id: sessionId ?? "",
+      const sid = sessionId ?? "";
+      if (!sid) return;
+      await syncQueueTimerSessions.enqueueUpdateSession({
+        sessionId: sid,
         data: {
           started_at: startedIso,
           ended_at: endedIso,
         },
       });
+      void syncQueue.process();
+      await queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
+      await queryClient.invalidateQueries({
+        queryKey: getGetApiV1TimerSessionsIdQueryKey(sid),
+      });
+      await queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+      if (id) {
+        await queryClient.invalidateQueries({ queryKey: getGetApiV1TimersIdQueryKey(id) });
+      }
+      router.back();
     },
-    [sessionId, updateMutation]
+    [sessionId, id, queryClient, router]
   );
 
   if (isLoading) {
@@ -308,9 +298,9 @@ export default function EditSessionScreen() {
         <Button
           variant="primary"
           onPress={handleSubmit(onSubmit)}
-          disabled={updateMutation.isPending || isSubmitting}
+          disabled={isSubmitting}
         >
-          {updateMutation.isPending ? t("saving") : t("save")}
+          {isSubmitting ? t("saving") : t("save")}
         </Button>
       </ScrollView>
       <DateTimePickerModal

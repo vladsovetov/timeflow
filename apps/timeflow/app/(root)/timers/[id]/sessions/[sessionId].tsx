@@ -5,7 +5,6 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   useGetApiV1TimersId,
   useGetApiV1TimerSessionsId,
-  useDeleteApiV1TimerSessionsId,
   getGetApiV1TimersIdQueryKey,
   getGetApiV1TimersQueryKey,
   getGetApiV1TimerSessionsQueryKey,
@@ -18,6 +17,8 @@ import { useUserTimezone } from "@/src/contexts/AppContext";
 import { parseDateTime, now } from "@/src/lib/date";
 import { SessionTimeDisplay } from "@/src/components/SessionTimeDisplay/SessionTimeDisplay";
 import { DurationDisplay } from "@/src/components/DurationDisplay/DurationDisplay";
+import { syncQueueTimerSessions } from "@/src/lib/sync-queue-timer-sessions";
+import { syncQueue } from "@/src/lib/sync-queue";
 
 function formatDate(dateString: string, zone: string): string {
   const date = parseDateTime(dateString, zone);
@@ -66,17 +67,7 @@ export default function SessionDetailsScreen() {
   const { data: sessionData, isLoading: isLoadingSession, error: sessionError, refetch: refetchSession } =
     useGetApiV1TimerSessionsId(sessionId ?? "");
 
-  const deleteMutation = useDeleteApiV1TimerSessionsId({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
-        if (id) queryClient.invalidateQueries({ queryKey: getGetApiV1TimersIdQueryKey(id) });
-        queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
-        if (sessionId) queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsIdQueryKey(sessionId) });
-        router.back();
-      },
-    },
-  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
@@ -94,8 +85,22 @@ export default function SessionDetailsScreen() {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            if (sessionId) deleteMutation.mutate({ id: sessionId });
+          onPress: async () => {
+            if (!sessionId) return;
+            setIsDeleting(true);
+            try {
+              await syncQueueTimerSessions.enqueueDeleteSession({ sessionId });
+              void syncQueue.process();
+              await queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+              if (id) await queryClient.invalidateQueries({ queryKey: getGetApiV1TimersIdQueryKey(id) });
+              await queryClient.invalidateQueries({ queryKey: getGetApiV1TimerSessionsQueryKey() });
+              await queryClient.invalidateQueries({
+                queryKey: getGetApiV1TimerSessionsIdQueryKey(sessionId),
+              });
+              router.back();
+            } finally {
+              setIsDeleting(false);
+            }
           },
         },
       ]
@@ -204,10 +209,10 @@ export default function SessionDetailsScreen() {
           <Button
             variant="danger"
             onPress={handleDelete}
-            disabled={deleteMutation.isPending}
+            disabled={isDeleting}
             className="mt-6"
           >
-            {deleteMutation.isPending ? "Deleting..." : "Delete Session"}
+            {isDeleting ? "Deleting..." : "Delete Session"}
           </Button>
         </View>
       </ScrollView>

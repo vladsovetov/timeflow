@@ -35,6 +35,9 @@ async function saveOps(ops: SyncOp[]): Promise<void> {
 
 const queue = new PQueue({ concurrency: 1, timeout: 30000 });
 
+/** Prevents concurrent duplicate API calls for the same op id. */
+const processingOpIds = new Set<string>();
+
 let onProcessedCallback: ((op: SyncOp) => void) | undefined;
 
 /**
@@ -51,8 +54,9 @@ export function registerExecutor<T>(type: string, fn: Executor<T>): void {
 export const syncQueue = {
   /**
    * Add a mutation to the queue. Persists to AsyncStorage and processes when possible.
+   * Returns the persisted op (use `id` for correlating optimistic UI, e.g. `pending-${op.id}`).
    */
-  async enqueue<T>(type: string, payload: T): Promise<void> {
+  async enqueue<T>(type: string, payload: T): Promise<SyncOp<T>> {
     const op: SyncOp<T> = {
       id: generateId(),
       type,
@@ -62,6 +66,18 @@ export const syncQueue = {
     ops.push(op);
     await saveOps(ops);
     queue.add(() => processOne(op));
+    return op;
+  },
+
+  /**
+   * Remove a queued op by id without calling the API (e.g. superseded or cancelled). Returns whether it existed.
+   */
+  async removeById(id: string): Promise<boolean> {
+    const ops = await loadOps();
+    const filtered = ops.filter((o) => o.id !== id);
+    if (filtered.length === ops.length) return false;
+    await saveOps(filtered);
+    return true;
   },
 
   /**
@@ -110,6 +126,8 @@ export const syncQueue = {
 };
 
 async function processOne(op: SyncOp): Promise<void> {
+  if (processingOpIds.has(op.id)) return;
+
   try {
     const ops = await loadOps();
     if (!ops.some((o) => o.id === op.id)) return; // Already processed
@@ -120,6 +138,7 @@ async function processOne(op: SyncOp): Promise<void> {
       return;
     }
 
+    processingOpIds.add(op.id);
     await executor(op.payload);
 
     const updated = await loadOps();
@@ -128,5 +147,7 @@ async function processOne(op: SyncOp): Promise<void> {
     onProcessedCallback?.(op);
   } catch {
     // Op stays in queue for retry on next process()
+  } finally {
+    processingOpIds.delete(op.id);
   }
 }

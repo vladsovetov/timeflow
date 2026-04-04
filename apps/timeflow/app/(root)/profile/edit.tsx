@@ -7,16 +7,14 @@ import * as yup from "yup";
 import SelectDropdown from "react-native-select-dropdown";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  useGetApiV1Me,
-  usePatchApiV1Me,
-  getGetApiV1MeQueryKey,
-} from "@acme/api-client";
+import { useGetApiV1Me, getGetApiV1MeQueryKey } from "@acme/api-client";
 import { TextInput } from "@/src/components/TextInput/TextInput";
 import { Button } from "@/src/components/Button/Button";
 import type { UpdateProfileRequest } from "@acme/api-client";
 import { useTranslation } from "@/src/i18n";
 import { SUPPORTED_LOCALES } from "@/src/i18n";
+import { syncQueueTimersProfile } from "@/src/lib/sync-queue-timers-profile";
+import { syncQueue } from "@/src/lib/sync-queue";
 
 // Comprehensive list of IANA timezones (React Native doesn't support Intl.supportedValuesOf)
 const IANA_TIMEZONES = [
@@ -134,7 +132,6 @@ export default function EditProfileScreen() {
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const { data: profileData, isLoading: isLoadingProfile } = useGetApiV1Me();
-  const updateProfile = usePatchApiV1Me();
 
   const profile = profileData?.status === 200 ? profileData.data : null;
 
@@ -171,19 +168,16 @@ export default function EditProfileScreen() {
 
   const onSubmit = async (data: ProfileFormValues) => {
     try {
-      const result = await updateProfile.mutateAsync({
-        data: {
-          ...data,
-          language:
-            data.language === "" || data.language === null
-              ? null
-              : data.language ?? undefined,
-        },
+      await syncQueueTimersProfile.enqueueUpdateProfile({
+        ...data,
+        language:
+          data.language === "" || data.language === null
+            ? null
+            : data.language ?? undefined,
       });
-      if (result.status === 200) {
-        await queryClient.invalidateQueries({ queryKey: getGetApiV1MeQueryKey() });
-        router.back();
-      }
+      void syncQueue.process();
+      await queryClient.invalidateQueries({ queryKey: getGetApiV1MeQueryKey() });
+      router.back();
     } catch (error) {
       console.error("Failed to update profile:", error);
     }

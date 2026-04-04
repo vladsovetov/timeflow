@@ -3,8 +3,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import {
   useGetApiV1TimersId,
-  usePatchApiV1TimersId,
-  useDeleteApiV1TimersId,
   type UpdateTimerRequest,
   getGetApiV1TimersQueryKey,
   getGetApiV1TimersIdQueryKey,
@@ -12,9 +10,11 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { TimerForm, useTimerForm } from "@/src/components/TimerForm/TimerForm";
 import { Button } from "@/src/components/Button/Button";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import * as SecureStore from "expo-secure-store";
 import { useTranslation } from "@/src/i18n";
+import { syncQueueTimersProfile } from "@/src/lib/sync-queue-timers-profile";
+import { syncQueue } from "@/src/lib/sync-queue";
 
 const COLOR_PICKER_STORAGE_KEY = "selected_color_temp";
 
@@ -24,6 +24,8 @@ export default function EditTimerScreen() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data, isLoading, error } = useGetApiV1TimersId(id ?? "");
 
@@ -59,27 +61,6 @@ export default function EditTimerScreen() {
     }, [form])
   );
 
-  const updateMutation = usePatchApiV1TimersId({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
-        if (id) {
-          queryClient.invalidateQueries({ queryKey: getGetApiV1TimersIdQueryKey(id) });
-        }
-        router.back();
-      },
-    },
-  });
-
-  const deleteMutation = useDeleteApiV1TimersId({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
-        router.back();
-      },
-    },
-  });
-
   const handleDelete = () => {
     Alert.alert(
       t("deleteTimer"),
@@ -92,9 +73,16 @@ export default function EditTimerScreen() {
         {
           text: t("delete"),
           style: "destructive",
-          onPress: () => {
-            if (id) {
-              deleteMutation.mutate({ id });
+          onPress: async () => {
+            if (!id) return;
+            setIsDeleting(true);
+            try {
+              await syncQueueTimersProfile.enqueueDeleteTimer({ id });
+              void syncQueue.process();
+              await queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+              router.back();
+            } finally {
+              setIsDeleting(false);
             }
           },
         },
@@ -102,7 +90,7 @@ export default function EditTimerScreen() {
     );
   };
 
-  const onSubmit = form.handleSubmit((data) => {
+  const onSubmit = form.handleSubmit(async (data) => {
     if (!id) return;
     const payload: UpdateTimerRequest = {
       timer_type: data.timer_type,
@@ -115,7 +103,16 @@ export default function EditTimerScreen() {
           ? data.min_time_minutes * 60
           : null,
     };
-    updateMutation.mutate({ id, data: payload });
+    setIsSaving(true);
+    try {
+      await syncQueueTimersProfile.enqueueUpdateTimer({ id, data: payload });
+      void syncQueue.process();
+      await queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+      await queryClient.invalidateQueries({ queryKey: getGetApiV1TimersIdQueryKey(id) });
+      router.back();
+    } finally {
+      setIsSaving(false);
+    }
   });
 
   if (isLoading) {
@@ -147,18 +144,18 @@ export default function EditTimerScreen() {
         <Button
           variant="danger"
           onPress={handleDelete}
-          disabled={deleteMutation.isPending}
+          disabled={isDeleting}
           className="flex-1"
         >
-          {deleteMutation.isPending ? t("deleting") : t("delete")}
+          {isDeleting ? t("deleting") : t("delete")}
         </Button>
         <Button
           variant="primary"
           onPress={onSubmit}
-          disabled={updateMutation.isPending}
+          disabled={isSaving}
           className="flex-1"
         >
-          {updateMutation.isPending ? t("saving") : t("save")}
+          {isSaving ? t("saving") : t("save")}
         </Button>
       </View>
     </View>

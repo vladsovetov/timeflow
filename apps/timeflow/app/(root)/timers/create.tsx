@@ -1,14 +1,16 @@
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
-import { usePostApiV1Timers, getGetApiV1TimersQueryKey } from "@acme/api-client";
+import { getGetApiV1TimersQueryKey } from "@acme/api-client";
 import type { CreateTimerRequest } from "@acme/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import * as SecureStore from "expo-secure-store";
 import { TimerForm, useTimerForm } from "@/src/components/TimerForm/TimerForm";
 import { Button } from "@/src/components/Button/Button";
 import { useTranslation } from "@/src/i18n";
+import { syncQueueTimersProfile } from "@/src/lib/sync-queue-timers-profile";
+import { syncQueue } from "@/src/lib/sync-queue";
 
 const COLOR_PICKER_STORAGE_KEY = "selected_color_temp";
 
@@ -28,6 +30,7 @@ export default function CreateTimerScreen() {
   const insets = useSafeAreaInsets();
   const initialColor = useMemo(() => pickRandomColor(), []);
   const form = useTimerForm({ color: initialColor }, false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Handle color selection from color picker
   useFocusEffect(
@@ -44,16 +47,7 @@ export default function CreateTimerScreen() {
     }, [form])
   );
 
-  const createMutation = usePostApiV1Timers({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
-        router.back();
-      },
-    },
-  });
-
-  const onSubmit = form.handleSubmit((data) => {
+  const onSubmit = form.handleSubmit(async (data) => {
     if (typeof data.timer_type !== "string" || typeof data.name !== "string") return;
     const payload: CreateTimerRequest = {
       timer_type: data.timer_type,
@@ -65,7 +59,15 @@ export default function CreateTimerScreen() {
       payload.min_time = data.min_time_minutes * 60;
     }
     if (typeof data.is_archived === "boolean") payload.is_archived = data.is_archived;
-    createMutation.mutate({ data: payload });
+    setIsSaving(true);
+    try {
+      await syncQueueTimersProfile.enqueueCreateTimer(payload);
+      void syncQueue.process();
+      await queryClient.invalidateQueries({ queryKey: getGetApiV1TimersQueryKey() });
+      router.back();
+    } finally {
+      setIsSaving(false);
+    }
   });
 
   return (
@@ -75,10 +77,10 @@ export default function CreateTimerScreen() {
         <Button
           variant="primary"
           onPress={onSubmit}
-          disabled={createMutation.isPending}
+          disabled={isSaving}
           className="w-full"
         >
-          {createMutation.isPending ? t("creating") : t("createTimer")}
+          {isSaving ? t("creating") : t("createTimer")}
         </Button>
       </View>
     </View>

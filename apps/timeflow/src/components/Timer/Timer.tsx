@@ -4,16 +4,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePostHog } from "posthog-react-native";
-import {
-  usePostApiV1TimerSessions,
-  usePatchApiV1TimerSessionsId,
-  type Timer as TimerModel,
-} from "@acme/api-client";
+import { type Timer as TimerModel } from "@acme/api-client";
 import { useUserTimezone } from "@/src/contexts/AppContext";
 import { useTranslation } from "@/src/i18n";
 import { getCategoryDisplayName } from "@/src/lib/category";
 import { parseDateTime, now } from "@/src/lib/date";
-import { syncQueueTimerSessions } from "@/src/lib/sync-queue-timer-sessions";
+import {
+  syncQueueTimerSessions,
+  pendingSessionLocalId,
+} from "@/src/lib/sync-queue-timer-sessions";
+import { syncQueue } from "@/src/lib/sync-queue";
 import { DurationDisplay } from "@/src/components/DurationDisplay/DurationDisplay";
 
 const TIMER_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -30,8 +30,6 @@ const TIMER_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   other: "ellipsis-horizontal",
 };
 
-const TEMP_SESSION_PREFIX = "temp-";
-
 interface TimerProps {
   timer: TimerModel;
   onStart?: () => void;
@@ -45,8 +43,9 @@ interface TimerProps {
   isActive?: boolean;
 }
 
-function isTempSessionId(id: string | null): boolean {
-  return id != null && id.startsWith(TEMP_SESSION_PREFIX);
+/** Session id is not yet persisted on the server (optimistic or queued). */
+function isLocalPendingSessionId(id: string | null): boolean {
+  return id != null && (id.startsWith("temp-") || id.startsWith("pending-"));
 }
 
 /** Returns white or dark text color for contrast on the given hex background. */
@@ -85,11 +84,9 @@ export function Timer({
     : 0;
 
   const [staticTime, setStaticTime] = useState(baseTime + elapsedWhenRunning);
-  const [tick, setTick] = useState(0);
+  /** Drives a re-render every second while running (elapsed time updates). */
+  const [, setTick] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const createMutation = usePostApiV1TimerSessions();
-  const patchMutation = usePatchApiV1TimerSessionsId();
 
   const time =
     isRunning && inProgress
@@ -145,12 +142,18 @@ export function Timer({
     });
   }
 
-  function handleStart() {
+  async function handleStart() {
     const timerId = timer.id;
     if (timerId == null || timerId === "") return;
 
     const startedAt = now(zone).toISO() ?? "";
-    const tempId = `${TEMP_SESSION_PREFIX}${now(zone).toMillis()}`;
+
+    const op = await syncQueueTimerSessions.enqueueCreateSession({
+      timerId,
+      startedAt,
+      endedAt: null,
+    });
+    const localSessionId = pendingSessionLocalId(op.id);
 
     posthog?.capture("timer_started", {
       timer_id: timerId,
@@ -163,7 +166,7 @@ export function Timer({
           if (t.id === timerId) {
             return {
               ...t,
-              timer_session_in_progress: { id: tempId, started_at: startedAt },
+              timer_session_in_progress: { id: localSessionId, started_at: startedAt },
             };
           }
           return {
@@ -175,42 +178,7 @@ export function Timer({
       onStart?.();
     }
 
-    createMutation.mutate(
-      {
-        data: {
-          timer_id: timerId,
-          started_at: startedAt,
-        },
-      },
-      {
-        onSuccess: (res) => {
-          if (res.status === 201 && timersQueryKey && res.data?.data) {
-            const session = res.data.data;
-            updateTimersCache((timers) =>
-              timers.map((t) => {
-                if (t.id === timerId && t.timer_session_in_progress?.id === tempId) {
-                  return {
-                    ...t,
-                    timer_session_in_progress: {
-                      id: session.id,
-                      started_at: session.started_at,
-                    },
-                  };
-                }
-                return t;
-              })
-            );
-          }
-        },
-        onError: () => {
-          syncQueueTimerSessions.enqueueCreateSession({
-            timerId,
-            startedAt,
-            endedAt: null,
-          });
-        },
-      }
-    );
+    void syncQueue.process();
   }
 
   async function handlePause() {
@@ -248,31 +216,23 @@ export function Timer({
       onPause?.();
     }
 
-    if (isTempSessionId(sid)) {
+    if (isLocalPendingSessionId(sid)) {
       const merged = await syncQueueTimerSessions.updateCreateSessionWithEndedAt(timer.id, endedAt);
-      if (merged) return; // Merged into pending CreateSession; no PATCH needed
-      syncQueueTimerSessions.enqueueCreateSession({
+      if (merged) return;
+      await syncQueueTimerSessions.enqueueCreateSession({
         timerId: timer.id,
         startedAt: inProgress?.started_at ?? endedAt,
         endedAt,
       });
+      void syncQueue.process();
       return;
     }
 
-    patchMutation.mutate(
-      {
-        id: sid,
-        data: { ended_at: endedAt },
-      },
-      {
-        onError: () => {
-          syncQueueTimerSessions.enqueueEndSession({
-            sessionId: sid,
-            endedAt,
-          });
-        },
-      }
-    );
+    await syncQueueTimerSessions.enqueueEndSession({
+      sessionId: sid,
+      endedAt,
+    });
+    void syncQueue.process();
   }
 
   const iconName = TIMER_TYPE_ICONS[timer.timer_type] || TIMER_TYPE_ICONS.other;

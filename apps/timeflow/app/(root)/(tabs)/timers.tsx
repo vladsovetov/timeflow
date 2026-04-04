@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useQueryClient } from "@tanstack/react-query";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { scheduleOnRN } from "react-native-worklets";
 import DraggableFlatList, {
@@ -17,11 +16,7 @@ import DraggableFlatList, {
   type RenderItemParams,
 } from "react-native-draggable-flatlist";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import {
-  getApiV1Timers,
-  usePatchApiV1TimersReorder,
-  getGetApiV1TimersQueryKey,
-} from "@acme/api-client";
+import { getApiV1Timers, getGetApiV1TimersQueryKey } from "@acme/api-client";
 import { DateTime } from "luxon";
 import { Button } from "@/src/components/Button/Button";
 import { Timer } from "@/src/components/Timer/Timer";
@@ -29,6 +24,8 @@ import type { Timer as TimerModel } from "@acme/api-client";
 import { useUserTimezone } from "@/src/contexts/AppContext";
 import { now } from "@/src/lib/date";
 import { getPendingInProgressSessions } from "@/src/lib/sync-queue-timer-sessions";
+import { syncQueueTimersProfile } from "@/src/lib/sync-queue-timers-profile";
+import { syncQueue } from "@/src/lib/sync-queue";
 import { useTranslation } from "@/src/i18n";
 import { DateNavigator } from "@/src/components/DateNavigator/DateNavigator";
 import { LinearGradient } from "expo-linear-gradient";
@@ -39,7 +36,6 @@ const ACTIVE_TIMER_FOOTER_GRADIENT = ["rgba(124, 58, 237, 0.12)", "#5444", "#B14
 
 export default function TimersScreen() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const zone = useUserTimezone();
   const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState(() => now(zone).startOf("day"));
@@ -56,7 +52,6 @@ export default function TimersScreen() {
     placeholderData: keepPreviousData,
   });
 
-  const reorderMutation = usePatchApiV1TimersReorder();
   const timersFromApi = useMemo(
     () => (data?.status === 200 ? data.data.data : []),
     [data]
@@ -167,19 +162,15 @@ export default function TimersScreen() {
       if (!isToday) return;
       setTimers(newData);
       try {
-        const res = await reorderMutation.mutateAsync({
-          data: { timer_ids: newData.map((t) => t.id) },
+        await syncQueueTimersProfile.enqueueReorderTimers({
+          timer_ids: newData.map((t) => t.id),
         });
-        if (res.status === 200) {
-          await queryClient.invalidateQueries({
-            queryKey: getGetApiV1TimersQueryKey(),
-          });
-        }
+        void syncQueue.process();
       } catch {
         setTimers(timersFromApi);
       }
     },
-    [isToday, reorderMutation, queryClient, timersFromApi]
+    [isToday, timersFromApi]
   );
 
   if (showFullscreenLoading) {
