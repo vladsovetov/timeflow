@@ -45,6 +45,8 @@ interface TimerProps {
   readOnly?: boolean;
   /** When true, applies enhanced visual styling to highlight the active/running timer. */
   isActive?: boolean;
+  /** Bottom bar: full-width strip, no card border/rounding/shadow (use with isActive). */
+  footerStrip?: boolean;
 }
 
 /** Returns white or dark text color for contrast on the given hex background. */
@@ -66,6 +68,7 @@ export function Timer({
   readOnly = false,
   onLongPress,
   isActive = false,
+  footerStrip = false,
 }: TimerProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -237,27 +240,34 @@ export function Timer({
     const g = parseInt(accentColor.slice(3, 5), 16);
     const b = parseInt(accentColor.slice(5, 7), 16);
     if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return undefined;
-    return `rgba(${r}, ${g}, ${b}, 0.15)`;
+    return `rgba(${r}, ${g}, ${b}, 0.52)`;
   };
+
+  const activeBackgroundColor = getActiveBackgroundColor();
+  const showActiveCardChrome = isActive && !footerStrip;
 
   return (
     <TouchableOpacity
       onPress={handleCardPress}
       onLongPress={onLongPress}
-      className={`rounded-xl p-3 flex-row items-center ${isActive ? "" : "bg-tf-bg-secondary"}`}
+      className={`flex-row items-center ${footerStrip ? "w-full rounded-none px-8 py-5" : "rounded-xl p-3"} ${isActive ? "" : "bg-tf-bg-secondary"}`}
       style={[
         {
-          borderWidth: isActive ? 3 : 2,
-          borderColor: accentColor,
+          borderWidth: footerStrip && isActive ? 0 : showActiveCardChrome ? 3 : 2,
+          borderColor: footerStrip && isActive ? "transparent" : accentColor,
         },
         isActive && {
-          backgroundColor: getActiveBackgroundColor(),
-          shadowColor: accentColor,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.7,
-          shadowRadius: 16,
-          elevation: 12,
-          transform: [{ scale: 1.02 }],
+          backgroundColor: activeBackgroundColor,
+          ...(showActiveCardChrome
+            ? {
+                shadowColor: accentColor,
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.7,
+                shadowRadius: 16,
+                elevation: 12,
+                transform: [{ scale: 1.02 }],
+              }
+            : {}),
         },
       ]}
       activeOpacity={0.7}

@@ -17,22 +17,22 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="timers"
-        options={{
-          title: t("timers"),
-          tabBarLabel: t("timers"),
-          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-            <Ionicons name="timer-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="stats"
         options={{
           title: t("stats"),
           tabBarLabel: t("stats"),
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="stats-chart-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="timers"
+        options={{
+          title: t("timers"),
+          tabBarLabel: t("timers"),
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <Ionicons name="timer-outline" size={size} color={color} />
           ),
         }}
       />

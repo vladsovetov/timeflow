@@ -28,11 +28,8 @@ import { syncQueueTimersProfile } from "@/src/lib/sync-queue-timers-profile";
 import { syncQueue } from "@/src/lib/sync-queue";
 import { useTranslation } from "@/src/i18n";
 import { DateNavigator } from "@/src/components/DateNavigator/DateNavigator";
-import { LinearGradient } from "expo-linear-gradient";
 
 const SWIPE_THRESHOLD = 60;
-
-const ACTIVE_TIMER_FOOTER_GRADIENT = ["rgba(124, 58, 237, 0.12)", "#5444", "#B14593"] as const;
 
 export default function TimersScreen() {
   const router = useRouter();
@@ -212,18 +209,18 @@ export default function TimersScreen() {
     );
   }
 
-  const fixedFooter = activeTimer != null ? (
-    <View
-      className="px-6 py-4 bg-tf-bg-tertiary rounded-2xl border-2 border-tf-bg-accent"
-    >
-      <Timer
-        timer={activeTimer}
-        timersQueryKey={timersQueryKey}
-        readOnly={!isToday}
-        isActive
-      />
-    </View>
-  ) : null;
+  const fixedFooter =
+    activeTimer != null ? (
+      <View className="w-full">
+        <Timer
+          timer={activeTimer}
+          timersQueryKey={timersQueryKey}
+          readOnly={!isToday}
+          isActive
+          footerStrip
+        />
+      </View>
+    ) : null;
 
   return (
     <GestureDetector gesture={panGesture}>
